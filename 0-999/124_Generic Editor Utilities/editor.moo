@@ -58,6 +58,10 @@ while loop (1)
       state.arg = cmd[2..$];
       if (state.command in {"insert", "ins", "inse", "inser"})
         this:cmd_insert(state);
+      elseif (state.command in {"previous", "prev", "p"})
+        this:cmd_previous(state);
+      elseif (state.command in {"next", "n"})
+        this:cmd_next(state);
       elseif (state.command in {"paste", "load"})
         this:cmd_load(state);
       elseif (state.command in {"copy", "save"})
@@ -96,7 +100,7 @@ while loop (1)
         this:options($string_utils:from_list(state.arg, " "));
       elseif (state.command in {"del", "dele", "delet", "delete", "erase", "rm"})
         this:cmd_delete(state);
-      elseif (state.command in {"list", "l", "view", "p"})
+      elseif (state.command in {"list", "l", "view"})
         this:cmd_list(state);
       elseif (state.verb && state.command in {"comment", "commentify"})
         this:cmd_commentify(state);

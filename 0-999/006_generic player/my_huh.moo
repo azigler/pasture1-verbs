@@ -6,7 +6,7 @@ permissions = caller == this || $perm_utils:controls(caller_perms(), this) && $c
 "verb - obvious                 pass - would be args";
 "plist - list of prepspecs that this command matches";
 "dlist and ilist - likewise for dobjspecs, iobjspecs";
-verb = args[1];
+{verb, arg} = args;
 if (`$server_options.support_numeric_verbname_strings ! E_PROPNF => 0' && $string_utils:is_integer(verb))
   return;
 endif
@@ -43,3 +43,12 @@ for fobj in (this.features)
     return 1;
   endif
 endfor
+try
+  social = $socials:match_social(verb);
+  if (verb:length() >= 3 && social)
+    this:do_social(social, arg != {} ? $string_utils:from_list(arg, " ") | "");
+    return 1;
+  endif
+except e (ANY)
+  return 1;
+endtry

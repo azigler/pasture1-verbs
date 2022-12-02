@@ -1,6 +1,10 @@
 #124:cmd_save   this none this rxd
 
 {state} = args;
+if (!state.text)
+  player:tell("No text to save.");
+  return E_INVARG;
+endif
 if (this:session_for(player, 1).text && $command_utils:yes_or_no("You already have text saved. Do you wish to overwrite it?") == 0)
   player:tell("Aborted.");
   return E_INVARG;
