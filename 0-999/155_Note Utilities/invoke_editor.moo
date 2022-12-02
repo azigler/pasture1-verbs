@@ -5,7 +5,9 @@
 "<upload command> is the MOO command that will get called with the contents of the editor.";
 {upload_command, ?text = {}, ?title = tostr($network.moo_name, " Note")} = args;
 session = $mcp:session_for(player);
-if (player:edit_option("local") != 1 || session == #-1 || session.authentication_key == E_NONE || !session:handles_package($mcp.registry:match_package("dns-org-mud-moo-simpleedit")))
+"if ((((player:edit_option(\"local\") != 1) || (session == #-1)) || (session.authentication_key == E_NONE)) || (!session:handles_package($mcp.registry:match_package(\"dns-org-mud-moo-simpleedit\"))))";
+if (1)
+  "lisdude was too lazy to rejigger local editing for chaosmoo sorry";
   "This is... not ideal:";
   data = $edit_utils:editor(text);
   force_input(player, upload_command);

@@ -13,9 +13,9 @@ endif
 "is the adding item a list? if so, add it element by element so there won't be 2 lists in the entries map. otherwise, just dump it in cause it's a string.";
 if (typeof(adding) == LIST)
   for i in (adding)
-    this.entries[date] = setadd(this.entries[date], i);
+    this.entries[date] = setadd(this.entries[date], i + ": " + $time_utils:time_sub("$H:$M:$S"));
   endfor
 else
-  this.entries[date] = setadd(this.entries[date], adding);
+  this.entries[date] = setadd(this.entries[date], adding + ": " + $time_utils:time_sub("$H:$M:$S"));
 endif
 return 1;

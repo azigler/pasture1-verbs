@@ -104,6 +104,9 @@ else
     else
       player:notify("0 errors.");
       player:notify("Verb programmed.");
+      if ($code_utils:update_last_modified(object, verbname))
+        player:notify("** Time-stamping failed.");
+      endif
     endif
   except error (ANY)
     player:notify(error[2]);

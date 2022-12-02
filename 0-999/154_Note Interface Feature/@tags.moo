@@ -33,7 +33,7 @@ if (opt == "Delete Tag")
 elseif (opt == "Change Tag Color")
   name = $ansi_utils:delete(this.utils:display_tag(choice));
   player:tell("Choose a new color:");
-  color = $ansi_utils:color_select();
+  color = $ansi_utils:color_selector();
   if ($command_utils:yes_or_no(tostr("Does this look correct: ", $ansi_utils:hr_to_code(color), name, "[normal]")) == 1)
     player:tell("Color changed.");
     this.utils:add_tag(name, color);

@@ -5,7 +5,7 @@
 {note} = args;
 title = this:get_note_title(note);
 if ($command_utils:yes_or_no(tostr("Are you SURE you want to delete the note titled \"", title, "\"?")) == 1)
-  $admin_utils:announce(tostr(player:nn(), " deleted the note: ", this:category_breadcrumb(this:category_for(note)[1], 1), " -> ", title, " {[red]", note, "[normal]}"), "announce_notes");
+  " $admin_utils:announce(tostr(player:nn(), \" deleted the note: \", this:category_breadcrumb(this:category_for(note)[1], 1), \" -> \", title, \" {[red]\", note, \"[normal]}\"), \"announce_notes\");";
   this:delete_note(note);
   player:tell("Note deleted.");
 else

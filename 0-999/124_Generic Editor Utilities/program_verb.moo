@@ -23,8 +23,12 @@ try
   else
     player:notify("0 errors.");
     player:notify(tostr(object, ":", verbname, " successfully compiled."));
+    if ($code_utils:update_last_modified(object, verbname))
+      player:notify("** Time-stamping failed.");
+    endif
   endif
 except error (ANY)
   player:notify(error[2]);
   player:notify("Verb not programmed.");
 endtry
+"Last modified Fri Dec  2 22:22:46 2022 UTC by Saeed (#128).";

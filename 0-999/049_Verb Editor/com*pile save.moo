@@ -77,6 +77,9 @@ elseif (typeof(result) == ERR)
 else
   player:tell(objverbname, verbcode ? " successfully compiled." | " verbcode removed.");
   this:set_changed(who, 0);
+  if ($code_utils:update_last_modified(object, vnum || vname))
+    player:notify("** Time-stamping failed.");
+  endif
 endif
 if (changeverb)
   this.objects[who] = object;

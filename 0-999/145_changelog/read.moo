@@ -5,7 +5,7 @@ if (to >= length(mapkeys(this.entries)))
   to = this:entries_to();
 endif
 ret = {};
-for i in (mapkeys($changelog.entries)[1..to])
+for i in (mapkeys($changelog.entries)[1..to]:reverse())
   ret = {@ret, @{i + ":", @$changelog.entries[i]}};
 endfor
 return ret;
