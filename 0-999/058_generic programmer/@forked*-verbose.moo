@@ -1,0 +1,53 @@
+#58:@forked*-verbose   any none none rd
+
+"Syntax:  @forked [player]";
+"         @forked all wizards";
+"";
+"For a normal player, shows all the tasks you have waiting in your queue, especially those forked or suspended. A wizard will see all the tasks of all the players unless the optional argument is provided. @forked-v*erbose will show the full callers() stack for each task that has suspended (not a fresh fork).";
+"The second form is only usable by wizards and provides an output of all tasks owned by characters who are .wizard=1. Useful to find a task that may get put in a random queue due to $wiz_utils:random_wizard. Or even finding verbs that run with wizard permissions that shouldn't be.";
+set_task_perms(player);
+verbose = $code_utils:verbname_match("@forked-v*erbose", verb);
+if (!dobjstr)
+  tasks = queued_tasks();
+elseif (dobjstr == "all wizards" && player.wizard)
+  tasks = {};
+  for t in (queued_tasks())
+    if (valid(t[5]) && t[5].wizard)
+      tasks = {@tasks, t};
+    endif
+    $command_utils:suspend_if_needed(1);
+  endfor
+elseif ($command_utils:player_match_result(dobj = $string_utils:match_player(dobjstr), dobjstr)[1])
+  return;
+elseif (typeof(tasks = $wiz_utils:queued_tasks(dobj)) != LIST)
+  player:notify(tostr(verb, " ", dobj.name, "(", dobj, "):  ", tasks));
+  return;
+endif
+if (tasks)
+  su = $string_utils;
+  player:notify("Queue ID    Start Time            Owner         {Size} Verb (Line) [This]");
+  player:notify("--------    ----------            -----         -----------------");
+  now = time();
+  for task in (tasks)
+    $command_utils:suspend_if_needed(0);
+    {q_id, start, nu, nu2, owner, vloc, vname, lineno, this, ?size = 0} = task;
+    if (typeof(start) == STR)
+      time = start;
+    else
+      time = start >= now ? ctime(start)[5..24] | su:left(start == -1 ? "Reading input ..." | tostr(now - start, " seconds ago..."), 20);
+    endif
+    owner_name = valid(owner) ? owner.name | tostr("Dead ", owner);
+    player:notify(tostr(su:left(tostr(q_id), 10), "  ", time, "  ", su:left(owner_name, 12), "  {", $building_utils:size_string(size), "} ", vloc, ":", vname, " (", lineno, ")", this != vloc ? tostr(" [", this, "]") | ""));
+    if (verbose || (index(vname, "suspend") && vloc == $command_utils))
+      "Display the first (or, if verbose, every) line of the callers() list, which is gotten by taking the second through last elements of task_stack().";
+      stack = `task_stack(q_id, 1) ! E_INVARG => {}';
+      for frame in (stack[2..verbose ? $ | 2])
+        {sthis, svname, sprogger, svloc, splayer, slineno} = frame;
+        player:notify(tostr("                    Called By...  ", su:left(valid(sprogger) ? sprogger.name | tostr("Dead ", sprogger), 19), "  ", svloc, ":", svname, sthis != svloc ? tostr(" [", sthis, "]") | "", " (", slineno, ")"));
+      endfor
+    endif
+  endfor
+  player:notify("-----------------------------------------------------------------");
+else
+  player:notify("No tasks.");
+endif
