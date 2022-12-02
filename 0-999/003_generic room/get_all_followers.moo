@@ -1,18 +1,20 @@
 #3:get_all_followers   this none this rxd
 
 {who} = args;
-ret = {};
+ret = who.followers;
 stoploop = 0;
 while (true)
   if (stoploop > 20)
     break;
   endif
-  for i in (who.followers)
+  mergeret = {};
+  for i in (ret)
     i in ret == 0 && (ret = ret:setadd(i));
+    for ii in (i.followers)
+      ii in ret == 0 && (mergeret = mergeret:setadd(ii));
+    endfor
   endfor
-  for ii in (i.followers)
-    i in ret == 0 && (ret = ret:setadd(ii));
-  endfor
+  ret = {@ret, mergeret};
   stoploop = stoploop + 1;
 endwhile
 return ret;
