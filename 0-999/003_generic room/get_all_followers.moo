@@ -10,12 +10,13 @@ while (true)
   endif
   mergeret = {};
   for i in (followers)
-    i in ret == 0 && (ret = ret:add(i));
+    valid(i) && i in ret == 0 && (ret = ret:add(i));
     for ii in (i.followers)
-      ii in ret == 0 && (mergeret = mergeret:add(ii));
+      valid(ii) && ii in ret == 0 && (mergeret = mergeret:add(ii));
     endfor
   endfor
   followers = mergeret;
+  player:tell(toliteral(followers));
   stoploop = stoploop + 1;
 endwhile
 return ret;
