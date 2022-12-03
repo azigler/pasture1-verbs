@@ -1,0 +1,678 @@
+@create $root_class named The System Object:The System Object
+@verb #0:"do_login_command" this none this
+@program #0:do_login_command
+"...This code should only be run as a server task...";
+if (callers())
+  return E_PERM;
+endif
+"...perform a threaded DNS name lookup and store the result for the duration of the connection...";
+$login:connection_name_lookup(player);
+if (typeof(h = $network:incoming_connection(player)) == OBJ)
+  "connected to an object";
+  $login:delete_name_lookup(player);
+  switch_player(player, h);
+  return;
+elseif (h)
+  return 0;
+endif
+host = $string_utils:connection_hostname(player);
+if ($login:redlisted(host))
+  boot_player(player);
+  server_log(tostr("REDLISTED: ", player, " from ", host));
+  return 0;
+endif
+"HTTP server by Krate";
+try
+  newargs = $http:handle_connection(@args);
+  if (!newargs)
+    return 0;
+  endif
+  args = newargs;
+except v (ANY)
+endtry
+"...checks to see if the login is spamming the server with too many commands...";
+if (!$login:maybe_limit_commands())
+  args = $login:parse_command(@args);
+  retval = $login:(args[1])(@listdelete(args, 1));
+  if (typeof(retval) == OBJ)
+    $login:delete_name_lookup(player);
+    switch_player(player, retval);
+    return;
+  else
+    return retval;
+  endif
+endif
+.
+
+@verb #0:"server_started" this none this
+@program #0:server_started
+if (!callers())
+  $server["last_restart_time"] = time();
+  $network:server_started();
+  $login:server_started();
+endif
+.
+
+@verb #0:"core_object_info core_objects" this none this
+@program #0:core_object_info
+set_task_perms($no_one);
+{?core_variant = "Imnotsurewhatthisshouldbeyetdontdependonthis", ?in_mcd = 0} = args;
+if (in_mcd)
+  {vb, perms, loc} = callers()[1][2..4];
+  if (((vb != "make-core-database") || (!perms.wizard)) || (loc != $wiz))
+    raise(E_PERM);
+  endif
+endif
+core_objects = {};
+proxy_original = proxy_incore = core_properties = skipped_parents = namespaces = {};
+todo = {{#0, {"sysobj", "owner"}}};
+"...lucky for us #0 has a self-referential property";
+while ({?sfc, @todo} = todo)
+  {o, ?props_to_follow = {}} = sfc;
+  o_props = {};
+  for p in (props_to_follow)
+    v = o.(p);
+    "...namespaces should be maps with only object values.";
+    if (typeof(v) == MAP)
+      map_values = mapvalues(v);
+      for x in (map_values)
+        if (typeof(x) != OBJ)
+          continue p;
+        endif
+      endfor
+      namespaces = {@namespaces, {o, p, v}};
+      core_objects = {@core_objects, @map_values};
+    else
+      for v in ((typeof(o.(p)) == MAP) ? mapvalues(o.(p)) | {o.(p)})
+        if ((typeof(v) != OBJ) || (!valid(v)))
+          continue p;
+        endif
+        o_props = {@o_props, p};
+        if ((v in proxy_original) || (v in core_objects))
+          "...we have been here before...";
+          continue p;
+        endif
+        if ($object_utils:has_callable_verb(v, "proxy_for_core"))
+          "...proxy_for_core() returns an object to";
+          "...take the place of v in the final core.";
+          "...For * verbs, proxy_for_core will also accept {}";
+          proxy_original[1..0] = {v};
+          try
+            vnew = v:proxy_for_core(core_variant, in_mcd);
+            if ((typeof(vnew) in {OBJ, LIST}) == 0)
+              raise(E_TYPE, "returned non-object, non-empty list");
+            elseif ((vnew in proxy_original) > 1)
+              raise(E_RECMOVE, "proxy loop");
+            endif
+          except e (ANY)
+            player:notify(tostr("Error from ", v, ":proxy_for_core => ", e[2]));
+            player:notify(toliteral(e[4]));
+            vnew = #-1;
+          endtry
+          if ((vnew == v) || (typeof(vnew) == LIST))
+            proxy_original[1..1] = {};
+          else
+            proxy_incore[1..0] = {vnew};
+            if ((vnew in core_objects) || (!valid(vnew)))
+              continue p;
+            endif
+            v = vnew;
+          endif
+        endif
+        if ($object_utils:has_callable_verb(v, "include_for_core"))
+          "...include_for_core() returns a list of properties on v";
+          "...to be searched for additional core objects.";
+          try
+            v_props = v:include_for_core(core_variant);
+            if (typeof(v_props) != LIST)
+              raise(E_TYPE, "returned non-list");
+            endif
+            if (v_props)
+              todo = {@todo, {v, v_props}};
+            endif
+          except e (ANY)
+            player:notify(tostr("Error from ", v, ":include_for_core => ", e[2]));
+            player:notify(toliteral(e[4]));
+          endtry
+        endif
+        core_objects = setadd(core_objects, v);
+      endfor
+    endif
+  endfor
+  core_properties = {@core_properties, {o, o_props}};
+endwhile
+for o in (core_objects)
+  p = parent(o);
+  while (valid(p))
+    if (!(p in core_objects))
+      skipped_parents = setadd(skipped_parents, p);
+    endif
+    p = parent(p);
+  endwhile
+endfor
+if (verb == "core_object_info")
+  "... what make-core-database needs";
+  return {core_objects, core_properties, skipped_parents, proxy_original, proxy_incore, namespaces};
+else
+  "... what most people care about";
+  return core_objects;
+endif
+.
+
+@verb #0:"init_for_core" this none this
+@program #0:init_for_core
+if (caller_perms().wizard)
+  pass(@args);
+  `delete_property(this, "mail_name_db") ! E_PROPNF';
+  `delete_verb(this, "do_command") ! E_VERBNF';
+  $server["core_history"] = {{$network.MOO_name, server_version(), time()}, @$server["core_history"]};
+  $wiz_utils.shutdown_message = "";
+  $server["shutdown_time"] = 0;
+  $server_options.dump_interval = 3600;
+  $wiz_utils.gripe_recipients = {player};
+  for v in ({"do_login_command", "server_started"})
+    c = {};
+    for i in (verb_code(this, v))
+      c = {@c, strsub(i, "$local.login", "$login")};
+    endfor
+    set_verb_code(#0, v, c);
+  endfor
+endif
+.
+
+@verb #0:"user_created user_connected" this none this
+@program #0:user_created
+"Copied from The System Object (#0):user_connected by Slartibartfast (#4242) Sun May 21 18:14:16 1995 PDT";
+if (callers())
+  return;
+endif
+$mcp:(verb)(@args);
+user = args[1];
+set_task_perms(user);
+try
+  user.location:confunc(user);
+  user:confunc();
+except id (ANY)
+  user:tell("Confunc failed: ", id[2], ".");
+  for tb in (id[4])
+    user:tell("... called from ", tb[4], ":", tb[2], (tb[4] != tb[1]) ? tostr(" (this == ", tb[1], ")") | "", ", line ", tb[6]);
+  endfor
+  user:tell("(End of traceback)");
+endtry
+user:tell(("If you are interested in recent developments, You may check the changelog with the changelog command. Help me:changelog has further information! Welcome to " + $network.moo_name) + ".");
+.
+
+@verb #0:"user_disconnected user_client_disconnected" this none this
+@program #0:user_disconnected
+if (callers())
+  return;
+endif
+if (args[1] < #0)
+  "not logged in user.  probably should do something clever here involving Carrot's no-spam hack.  --yduJ";
+  "...'forget' that we already performed a name lookup on this connection...";
+  $login:delete_name_lookup(args[1]);
+  return;
+endif
+$mcp:(verb)(@args);
+user = args[1];
+user.last_disconnect_time = time();
+set_task_perms(user);
+where = user.location;
+`user:disfunc() ! ANY => 0';
+if (user.location != where)
+  `where.location:disfunc(user) ! ANY => 0';
+endif
+`user.location:disfunc(user) ! ANY => 0';
+.
+
+@verb #0:"bf_chparent chparent" this none this
+@program #0:bf_chparent
+"chparent(object, new-parent) -- see help on the builtin.";
+who = caller_perms();
+{what, papa} = args;
+if (typeof(what) != OBJ)
+  retval = E_TYPE;
+elseif (!valid(what))
+  retval = E_INVARG;
+elseif (typeof(papa) != OBJ)
+  retval = E_TYPE;
+elseif ((!valid(papa)) && (papa != #-1))
+  retval = E_INVIND;
+elseif (!$perm_utils:controls(who, what))
+  retval = E_PERM;
+elseif ((is_player(what) && (!$object_utils:isa(papa, $player_class))) && (!who.wizard))
+  retval = E_PERM;
+elseif ((is_player(what) && (!$object_utils:isa(what, $player_class))) && (!who.wizard))
+  retval = E_PERM;
+elseif ((children(what) && $object_utils:isa(what, $player_class)) && (!$object_utils:isa(papa, $player_class)))
+  retval = E_PERM;
+elseif ((is_player(what) && (what in $wiz_utils.chparent_restricted)) && (!who.wizard))
+  retval = E_PERM;
+elseif ((((what.location == $mail_agent) && $object_utils:isa(what, $mail_recipient)) && (!$object_utils:isa(papa, $mail_recipient))) && (!who.wizard))
+  retval = E_PERM;
+elseif ((!valid(papa)) || ($perm_utils:controls(who, papa) || papa.f))
+  retval = `chparent(@args) ! ANY';
+else
+  retval = E_PERM;
+endif
+return ((typeof(retval) == ERR) && $code_utils:dflag_on()) ? raise(retval) | retval;
+.
+
+@verb #0:"bf_add_verb add_verb" this none this
+@program #0:bf_add_verb
+"add_verb() -- see help on the builtin for more information. This verb is called by the server when $server_options.protect_add_verb exists and is true and caller_perms() are not wizardly.";
+who = caller_perms();
+what = args[1];
+info = args[2];
+if (typeof(what) != OBJ)
+  retval = E_TYPE;
+elseif (!valid(what))
+  retval = E_INVARG;
+elseif ((!$perm_utils:controls(who, what)) && (!what.w))
+  "caller_perms() is not allowed to hack on the object in question";
+  retval = E_PERM;
+elseif (!$perm_utils:controls(who, info[1]))
+  "caller_perms() is not permitted to add a verb with the specified owner.";
+  retval = E_PERM;
+elseif (index(info[2], "w") && (!$server_options.permit_writable_verbs))
+  retval = E_INVARG;
+elseif (!$quota_utils:verb_addition_permitted(who))
+  retval = E_QUOTA;
+elseif (((what.owner != who) && (!who.wizard)) && (!$quota_utils:verb_addition_permitted(what.owner)))
+  retval = E_QUOTA;
+elseif (!who.programmer)
+  retval = E_PERM;
+else
+  "we now know that the caller's perms control the object or the object is writable, and we know that the caller's perms control the prospective verb owner (by more traditional means)";
+  retval = `add_verb(@args) ! ANY';
+endif
+return ((typeof(retval) == ERR) && $code_utils:dflag_on()) ? raise(retval) | retval;
+.
+
+@verb #0:"bf_add_property add_property" this none this
+@program #0:bf_add_property
+"add_property() -- see help on the builtin for more information. This verb is called by the server when $server_options.protect_add_property exists and is true and caller_perms() are not wizardly.";
+who = caller_perms();
+{what, propname, value, info} = args;
+if (typeof(what) != OBJ)
+  retval = E_TYPE;
+elseif (!valid(what))
+  retval = E_INVARG;
+elseif ((!$perm_utils:controls(who, what)) && (!what.w))
+  retval = E_PERM;
+elseif (!$perm_utils:controls(who, info[1]))
+  retval = E_PERM;
+elseif (!$quota_utils:property_addition_permitted(who))
+  retval = E_QUOTA;
+elseif (((what.owner != who) && (!who.wizard)) && (!$quota_utils:property_addition_permitted(what.owner)))
+  retval = E_QUOTA;
+  "elseif (!who.programmer)";
+  "  return E_PERM;     I wanted to do this, but $builder:@newmessage relies upon nonprogs being able to call add_property.  --Nosredna";
+elseif ((propname in {"object_size", "size_quota", "queued_task_limit"}) && (!who.wizard))
+  retval = E_PERM;
+else
+  "we now know that the caller's perms control the object (or the object is writable), and that the caller's perms are permitted to control the new property's owner.";
+  retval = `add_property(@args) ! ANY';
+endif
+return ((typeof(retval) == ERR) && $code_utils:dflag_on()) ? raise(retval) | retval;
+.
+
+@verb #0:"bf_recycle recycle" this none this
+@program #0:bf_recycle
+"recycle(object) -- see help on the builtin. This verb is called by the server when $server_options.protect_recycle exists and is true and caller_perms() are not wizardly.";
+{what} = args;
+if (!valid(what))
+  retval = E_INVARG;
+elseif (!$perm_utils:controls(who = caller_perms(), what))
+  retval = E_PERM;
+elseif ((p = `is_player(what) ! E_TYPE => 0') && (!who.wizard))
+  for p in ($wiz_utils:connected_wizards_unadvertised())
+    p:tell($string_utils:pronoun_sub("%N (%#) is currently trying to destroy %t (%[#t])", who, what));
+  endfor
+  retval = E_PERM;
+else
+  if (p)
+    $wiz_utils:unset_player(what);
+  endif
+  $recycler:kill_all_tasks(what);
+  retval = `recycle(what) ! ANY';
+endif
+return ((typeof(retval) == ERR) && $code_utils:dflag_on()) ? raise(retval) | retval;
+.
+
+@verb #0:"user_reconnected" this none this
+@program #0:user_reconnected
+if (callers())
+  return;
+endif
+$mcp:(verb)(@args);
+if ($object_utils:isa(user = args[1], $guest))
+  "from $guest:boot";
+  oldloc = user.location;
+  move(user, $nothing);
+  "..force enterfunc to be called so that the newbie gets a room description.";
+  move(user, user.home);
+  user:do_reset();
+  if ($object_utils:isa(oldloc, $room))
+    oldloc:announce("In the distance you hear someone's alarm clock going off.");
+    if (oldloc != user.location)
+      oldloc:announce(user.name, " wavers and vanishes into insubstantial mist.");
+    else
+      oldloc:announce(user.name, " undergoes a wrenching personality shift.");
+    endif
+  endif
+  set_task_perms(user);
+  `user:confunc() ! ANY';
+else
+  set_task_perms(user);
+  `user:reconfunc() ! ANY';
+endif
+.
+
+@verb #0:"bf_set_verb_info set_verb_info" this none this
+@program #0:bf_set_verb_info
+"set_verb_info() -- see help on the builtin for more information. This verb is called by the server when $server_options.protect_set_verb_info exists and is true and caller_perms() are not wizardly.";
+{o, v, i} = args;
+if (typeof(vi = `verb_info(o, v) ! ANY') == ERR)
+  "probably verb doesn't exist";
+  retval = vi;
+elseif (!$perm_utils:controls(cp = caller_perms(), vi[1]))
+  "perms don't control the current verb owner";
+  retval = E_PERM;
+elseif ((typeof(i) != LIST) || (typeof(no = i[1]) != OBJ))
+  "info is malformed";
+  retval = E_TYPE;
+elseif ((!valid(no)) || (!is_player(no)))
+  "invalid new verb owner";
+  retval = E_INVARG;
+elseif (!$perm_utils:controls(cp, no))
+  "perms don't control prospective verb owner";
+  retval = E_PERM;
+elseif (index(i[2], "w") && (!`$server_options.permit_writable_verbs ! E_PROPNF, E_INVIND => 1'))
+  retval = E_INVARG;
+else
+  retval = `set_verb_info(o, v, i) ! ANY';
+endif
+return ((typeof(retval) == ERR) && $code_utils:dflag_on()) ? raise(retval) | retval;
+.
+
+@verb #0:"bf_match match" this none this
+@program #0:bf_match
+m = `match(@args) ! ANY';
+return ((typeof(m) == ERR) && $code_utils:dflag_on()) ? raise(m) | m;
+.
+
+@verb #0:"bf_rmatch rmatch" this none this
+@program #0:bf_rmatch
+r = `rmatch(@args) ! ANY';
+return ((typeof(r) == ERR) && $code_utils:dflag_on()) ? raise(r) | r;
+.
+
+@verb #0:"checkpoint_finished" this none this
+@program #0:checkpoint_finished
+callers() && raise(E_PERM);
+$login.checkpoint_in_progress = 0;
+`$local.checkpoint_notification:checkpoint_finished(@args) ! ANY';
+.
+
+@verb #0:"do_out_of_band_command doobc" this none this
+@program #0:do_out_of_band_command
+"do_out_of_band_command -- a cheap and very dirty do_out_of_band verb.  Forwards to verb on player with same name if it exists, otherwise forwards to $login.  May only be called by the server in response to an out of band command, otherwise E_PERM is returned.";
+if (((caller == #-1) && (caller_perms() == #-1)) && (callers() == {}))
+  if (valid(player) && is_player(player))
+    $mcp:(verb)(@args);
+    set_task_perms(player);
+    $object_utils:has_callable_verb(player, "do_out_of_band_command") && player:do_out_of_band_command(@args);
+  else
+    $login:do_out_of_band_command(@args);
+  endif
+else
+  return E_PERM;
+endif
+.
+
+@verb #0:"handle_uncaught_error" this none this
+@program #0:handle_uncaught_error
+if (!callers())
+  {code, msg, value, stack, traceback} = args;
+  if (!$object_utils:connected(player))
+    "Mail the player the traceback if e isn't connected.";
+    $mail_agent:send_message(#0, player, {"traceback", $wiz_utils.gripe_recipients}, traceback);
+  endif
+  "now let the player do something with it if e wants...";
+  return `player:(verb)(@args) ! ANY';
+endif
+.
+
+@verb #0:"checkpoint_started" this none this
+@program #0:checkpoint_started
+callers() && raise(E_PERM);
+$login.checkpoint_in_progress = 1;
+`$local.checkpoint_notification:checkpoint_started(@args) ! ANY';
+.
+
+@verb #0:"bf_force_input" this none this
+@program #0:bf_force_input
+"Copied from Jay (#3920):bf_force_input Mon Jun 16 20:55:27 1997 PDT";
+"force_input(conn, line [, at-front])";
+"see help on the builtin for more information. This verb is called by the server when $server_options.protect_force_input exists and is true and caller_perms() are not wizardly.";
+{conn, line, ?at_front = 0} = args;
+if (caller_perms() != conn)
+  retval = E_PERM;
+elseif (conn in $login.newted)
+  retval = E_PERM;
+else
+  retval = `force_input(@args) ! ANY';
+endif
+return ((typeof(retval) == ERR) && $code_utils:dflag_on()) ? raise(retval) | retval;
+.
+
+@verb #0:"moveto" this none this
+@program #0:moveto
+"Let's keep bozos from partying.  --Nosredna the partypooper";
+return pass(#-1);
+.
+
+@verb #0:"bf_set_property_info set_property_info" this none this
+@program #0:bf_set_property_info
+who = caller_perms();
+retval = 0;
+try
+  {what, propname, info} = args;
+except (E_ARGS)
+  retval = E_ARGS;
+endtry
+try
+  {owner, perms, ?newname = 0} = info;
+except (E_ARGS)
+  retval = E_ARGS;
+except (E_TYPE)
+  retval = E_TYPE;
+endtry
+if (retval != 0)
+elseif ((newname in {"object_size", "size_quota", "queued_task_limit"}) && (!who.wizard))
+  retval = E_PERM;
+else
+  set_task_perms(who);
+  retval = `set_property_info(@args) ! ANY';
+endif
+return ((typeof(retval) == ERR) && $code_utils:dflag_on()) ? raise(retval) | retval;
+.
+
+@verb #0:"include_for_core" this none this
+@program #0:include_for_core
+return properties(this);
+.
+
+@verb #0:"handle_task_timeout" this none this
+@program #0:handle_task_timeout
+if (!callers())
+  {resource, stack, traceback} = args;
+  if (!$object_utils:connected(player))
+    "Mail the player the traceback if e isn't connected.";
+    $mail_agent:send_message(#0, player, {"traceback", $wiz_utils.gripe_recipients}, traceback);
+  endif
+  "now let the player do something with it if e wants...";
+  return `player:(verb)(@args) ! ANY';
+endif
+.
+
+@verb #0:"bf_read" this none this
+@program #0:bf_read
+set_task_perms(caller_perms());
+`player.reading_input = 1 ! E_PROPNF, E_INVIND';
+input = `read(@args) ! ANY';
+`clear_property(player, "reading_input") ! E_PROPNF, E_INVARG';
+return ((typeof(input) == ERR) && $code_utils:dflag_on()) ? raise(input) | input;
+.
+
+@verb #0:"sin" this none this
+@program #0:sin
+{?time = 0, @ann} = args;
+return $command_utils:suspend_if_needed(time, @ann);
+.
+
+@verb #0:"s ies es" this none this
+@program #0:s
+"A quick and dirty way to pluralize a word based on a number (oftentimes the result of a length() check).";
+"Usage: $verb(word, amount)";
+"$s(\"credit\", 2) => \"credits\"";
+"$ies(\"battery\", 2) => \"batteries\";";
+"$es(\"watch\", 2) => \"watches\";";
+{word, value} = args;
+return (value in {1, 1.0}) ? word | (((verb == "ies") ? word[1..$ - 1] | word) + verb);
+.
+
+@verb #0:"do_command" this none this
+@program #0:do_command
+server_log((("CMD from " + $string_utils:name_and_number(player)) + ": ") + argstr);
+.
+
+@prop #0."builder" #4 rc
+@prop #0."login" #10 r
+@prop #0."last_huh" #11 r
+@prop #0."guest_log" #12 r
+@prop #0."biglist" #13 rc
+@prop #0."big_mail_recipient" #14 rc
+@prop #0."limbo" #15 rc
+@prop #0."registration_db" #16 rc
+@prop #0."new_player_log" #17 rc
+@prop #0."wiz_utils" #24 rc
+@prop #0."site_db" #25 rc
+@prop #0."math_utils" #26 rc
+@prop #0."set_utils" #27 rc
+@prop #0."new_prog_log" #29 rc
+@prop #0."guest" #31 r
+@prop #0."spell" #32 rc
+@prop #0."seq_utils" #33 rc
+@prop #0."quota_log" #34 rc
+@prop #0."you" #35 r #36
+@prop #0."hacker" #36 rc
+@prop #0."generic_db" #37 rc
+@prop #0."no_one" #38 r
+@prop #0."player_db" #39 r
+@prop #0."player_class" #40 rc
+@prop #0."gender_utils" #41 r
+@prop #0."trig_utils" #26 rc
+@prop #0."time_utils" #43 rc
+@prop #0."mail_recipient" #45 rc
+@prop #0."mail_agent" #46 rc
+@prop #0."mail_editor" #47 rc
+@prop #0."note_editor" #48 rc
+@prop #0."verb_editor" #49 rc
+@prop #0."generic_editor" #50 rc
+@prop #0."match_utils" #51 rc
+@prop #0."object_utils" #52 rc
+@prop #0."lock_utils" #53 rc
+@prop #0."letter" #54 rc
+@prop #0."list_utils" #55 rc
+@prop #0."command_utils" #56 rc
+@prop #0."player" #6 rc
+@prop #0."wiz" #57 rc
+@prop #0."prog" #58 rc
+@prop #0."code_utils" #59 rc
+@prop #0."help" #60 rc
+@prop #0."nothing" #-1 rc
+@prop #0."failed_match" #-3 rc
+@prop #0."ambiguous_match" #-2 rc
+@prop #0."perm_utils" #42 rc
+@prop #0."building_utils" #21 rc
+@prop #0."string_utils" #20 rc
+@prop #0."news" #61 rc
+@prop #0."note" #9 rc
+@prop #0."container" #8 rc
+@prop #0."thing" #5 rc
+@prop #0."exit" #7 rc
+@prop #0."room" #3 rc
+@prop #0."player_start" #62 rc
+@prop #0."root_class" #1 rc
+@prop #0."recycler" #63 rc
+@prop #0."generic_options" #68 rc
+@prop #0."maxint" 9223372036854775807 rc
+@prop #0."minint" -9223372036854775807 rc
+@prop #0."error" #69 rc
+@prop #0."newt_log" #70 rc
+@prop #0."toad_log" #70 rc
+@prop #0."site_log" #70 rc
+@prop #0."housekeeper" #71 rc
+@prop #0."network" #72 rc
+@prop #0."generic_biglist_home" #73 r
+@prop #0."feature" #74 rc
+@prop #0."local" #-1 rc
+@prop #0."generic_utils" #78 rc
+@prop #0."quota_utils" #79 rc
+@prop #0."paranoid_db" #80 r
+@prop #0."sysobj" #0 r
+@prop #0."byte_quota_utils" #79 rc
+@prop #0."object_quota_utils" #81 rc
+@prop #0."feature_warehouse" #83 r
+@prop #0."password_verifier" #87 r
+@prop #0."frand_class" #88 rc
+@prop #0."mail_recipient_class" #40 rc
+@prop #0."stage_talk" #89 rc
+@prop #0."pasting_feature" #90 rc
+@prop #0."matrix_utils" #91 r #36
+@prop #0."convert_utils" #93 rc
+@prop #0."gendered_object" #94 r
+@prop #0."list_editor" #95 rc
+@prop #0."http" #97 rc
+@prop #0."ansi_pc" #100 r
+@prop #0."ansi_utils" #99 r
+@prop #0."mcp" #110 rc
+@prop #0."waif" #118 rc
+@prop #0."anon" #122 rc
+@prop #0."server" ["core_history" -> {{"a 2018 LambdaCore", "2.6.0", 1576791887}}, "last_restart_time" -> 1669932796, "name" -> "LambdaMOO-ToastStunt", "shutdown_time" -> 0] rc
+@prop #0."help_db" ["ansi" -> #101, "builder" -> #84, "builtin_function" -> #28, "core" -> #19, "editor" -> #44, "frand" -> #92, "mail" -> #85, "prog" -> #22, "toaststunt" -> #86, "verb" -> #18, "wiz" -> #23] rc
+@prop #0."generic_help" #30 rc
+@prop #0."options" ["ansi" -> #102, "build" -> #77, "display" -> #67, "edit" -> #66, "mail" -> #65, "prog" -> #76] rc
+@prop #0."server_options" #82 rc
+@prop #0."shapes" #75 rc
+@prop #0."proto" #120 rc
+@prop #0."str_proto" #119 rc
+@prop #0."map_proto" #117 rc
+@prop #0."list_proto" #115 rc
+@prop #0."int_proto" #114 rc
+@prop #0."obj_proto" #111 rc
+@prop #0."frobs" {} rc
+@prop #0."edit_utils" #124 r
+@prop #0."edit_state" #125 r
+@prop #0."menu_utils" #126 r
+@prop #0."edit_session" #127 rc
+@prop #0."time" #64 r #128
+@prop #0."area" #112 r #128
+@prop #0."global_chat" #130 r
+@prop #0."logger" #132 r #128
+@prop #0."scheduler" #134 r #128
+@prop #0."saeed_utils" #135 r #128
+@prop #0."changelog" #145 rc
+@prop #0."checklist" #136 rc
+@prop #0."git_utils" #152 r
+@prop #0."socials" #153 rc
+@prop #0."note_utils" #155 rc
+@prop #0."notes_feature" #154 rc
+@prop #0."skyes_rooms" #157 r #129
+@prop #0."skyes_things" #165 r #129
+@prop #0."zig_checklist" #166 r
+;;#0.("aliases") = {"The System Object"}
+;;#0.("description") = "The known universe."
+;;#0.("object_size") = {37739, 1669929999}

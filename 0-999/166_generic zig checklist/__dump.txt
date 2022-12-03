@@ -1,0 +1,51 @@
+@create $note named generic zig checklist:generic zig checklist
+@verb #166:"text" this none this
+@program #166:text
+cp = caller_perms();
+numbered = {};
+for item, index in (this.text)
+  numbered = listappend(numbered, (tostr(index) + ". ") + item);
+endfor
+if ($perm_utils:controls(cp, this) || this:is_readable_by(cp))
+  return numbered;
+else
+  return E_PERM;
+endif
+.
+
+@verb #166:"read" this none none rxd
+@program #166:read
+pass(@args);
+if (length(this.completed))
+  player:tell();
+  player:tell("This checklist has completed items:");
+  player:tell();
+  player:tell_lines_suspended(this:_get_completed_items());
+  player:tell();
+endif
+.
+
+@verb #166:"_get_completed_items" this none this
+@program #166:_get_completed_items
+completed_list = {};
+for item, index in (this.completed)
+  completed_list = listappend(completed_list, ((((tostr(index) + ". ") + item[1]) + " [Crossed off by ") + item[2]) + "]");
+endfor
+return completed_list;
+.
+
+@verb #166:"cross*off complete check tick" any on this rxd
+@program #166:crossoff
+crossed_index = toint(dobjstr);
+if (length(this.text) < crossed_index)
+  return player:tell("That item doesn't exist on the checklist.");
+endif
+$you:say_action(("%N %<crosses> \"" + this.text[crossed_index]) + "\" off %i.");
+this.completed = listappend(this.completed, {this.text[crossed_index], player.name});
+this.text = listdelete(this.text, crossed_index);
+.
+
+@prop #166."completed" {} rc
+;;#166.("aliases") = {"generic zig checklist"}
+;;#166.("description") = "There appears to be some writing on the note ..."
+;;#166.("object_size") = {0, 0}

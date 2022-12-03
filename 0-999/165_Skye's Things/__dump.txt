@@ -1,0 +1,13 @@
+@create $thing named Skye's Things:Skye's Things
+@verb #165:"name" this none this
+@program #165:name
+if (length(this.color > 1))
+  return (("[" + this.color) + "]") + this.name;
+else
+  return this.name;
+endif
+.
+
+@prop #165."color" "" r
+;;#165.("aliases") = {"Skye's Things"}
+;;#165.("object_size") = {0, 0}

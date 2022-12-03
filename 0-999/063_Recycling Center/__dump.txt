@@ -1,0 +1,227 @@
+@create $thing named Recycling Center:Recycling Center,Center
+@verb #63:"_recreate" this none this rxd #2
+@program #63:_recreate
+"Return a toad (child of #1, owned by $hacker) from this.contents.  Move it to #-1.  Recreate as a child of args[1], or of #1 if no args are given.  Chown to caller_perms() or args[2] if present.";
+{?what = #1, ?who = caller_perms()} = args;
+if (!(caller_perms().wizard || (who == caller_perms())))
+  return E_PERM;
+elseif (!(valid(what) && is_player(who)))
+  return E_INVARG;
+elseif ((((who != what.owner) && (!what.f)) && (!who.wizard)) && (!caller_perms().wizard))
+  return E_PERM;
+endif
+potential = next_recycled_object();
+if (typeof(potential) == OBJ)
+  return this:setup_toad(potential, who, what);
+else
+  return E_NONE;
+endif
+.
+
+@verb #63:"_recycle" this none this rxd #2
+@program #63:_recycle
+{item} = args;
+if (!$perm_utils:controls(caller_perms(), item))
+  raise(E_PERM);
+elseif (is_player(item))
+  raise(E_INVARG);
+endif
+this:addhist(caller_perms(), item);
+"...recreate can fail (:recycle can crash)...";
+this:add_orphan(item);
+this:kill_all_tasks(item);
+$quota_utils:reimburse_quota(item.owner, item);
+$building_utils:recreate(item, $nothing);
+this:remove_orphan(item);
+.
+
+@verb #63:"_create" this none this rxd #2
+@program #63:_create
+e = `set_task_perms(caller_perms()) ! ANY';
+if (typeof(e) == ERR)
+  return e;
+else
+  val = this:_recreate(@args);
+  return (val == E_NONE) ? $quota_utils:bi_create(@args) | val;
+endif
+.
+
+@verb #63:"addhist" this none this rxd #2
+@program #63:addhist
+if (caller == this)
+  h = this.history;
+  if ((len = length(h)) > this.nhist)
+    h = h[len - this.nhist..len];
+  endif
+  this.history = {@h, args};
+endif
+.
+
+@verb #63:"show*-history" this none none rxd #2
+@program #63:show-history
+if ($perm_utils:controls(valid(caller_perms()) ? caller_perms() | player, this))
+  for x in (this.history)
+    pname = valid(x[1]) ? x[1].name | "A recycled player";
+    oname = valid(x[2]) ? x[2].name | "recycled";
+    player:notify(tostr(pname, " (", x[1], ") recycled ", x[2], " (now ", oname, ")"));
+  endfor
+else
+  player:tell("Sorry.");
+endif
+.
+
+@verb #63:"setup_toad" this none this rxd #2
+@program #63:setup_toad
+"this:setup_toad(objnum,new_owner,parent)";
+"Called by :_create and :request.";
+if (caller != this)
+  return E_PERM;
+endif
+{potential, who, what} = args;
+if (!$quota_utils:creation_permitted(who))
+  return E_QUOTA;
+elseif (valid(potential))
+  return E_INVARG;
+else
+  set_task_perms({@callers(), {#-1, "", player}}[2][3]);
+  "... if :initialize crashes...";
+  this:add_orphan(potential);
+  $building_utils:recreate(potential, what);
+  $wiz_utils:set_owner(potential, who);
+  this:remove_orphan(potential);
+  "... if we don't get this far, the object stays on the orphan list...";
+  "... orphan list should be checked periodically...";
+  return potential;
+endif
+.
+
+@verb #63:"add_orphan" this none this
+@program #63:add_orphan
+if (caller == this)
+  this.orphans = setadd(this.orphans, args[1]);
+endif
+.
+
+@verb #63:"remove_orphan" this none this
+@program #63:remove_orphan
+if (caller == this)
+  this.orphans = setremove(this.orphans, args[1]);
+endif
+.
+
+@verb #63:"valid" this none this rxd #2
+@program #63:valid
+"Usage:  valid(object)";
+"True if object is valid.";
+return valid(args[1]);
+.
+
+@verb #63:"init_for_core" this none this rxd #2
+@program #63:init_for_core
+if (caller_perms().wizard)
+  this.orphans = {};
+  this.history = {};
+  this.lost_souls = {};
+  pass(@args);
+endif
+.
+
+@verb #63:"reclaim_lost_souls" this none this rxd #2
+@program #63:reclaim_lost_souls
+if (!caller_perms().wizard)
+  raise(E_PERM);
+endif
+fork (1800)
+  this:(verb)();
+endfork
+for x in (this.lost_souls)
+  this.lost_souls = setremove(this.lost_souls, x);
+  if ((valid(x) && (typeof(x.owner.owned_objects) == LIST)) && (!(x in x.owner.owned_objects)))
+    x.owner.owned_objects = setadd(x.owner.owned_objects, x);
+    $quota_utils:summarize_one_user(x.owner);
+  endif
+  $command_utils:suspend_if_needed(0);
+endfor
+.
+
+@verb #63:"check_quota_scam" this none this rxd #2
+@program #63:check_quota_scam
+who = args[1];
+if ($quota_utils.byte_based && (is_clear_property(who, "size_quota") || is_clear_property(who, "owned_objects")))
+  raise(E_QUOTA);
+endif
+cheater = 0;
+other_cheaters = {};
+for x in (this.lost_souls)
+  if (((valid(x) && ((owner = x.owner) != $hacker)) && (typeof(owner.owned_objects) == LIST)) && (!(x in owner.owned_objects)))
+    if (owner == who)
+      who.owned_objects = setadd(who.owned_objects, x);
+      cheater = 1;
+    else
+      "it's someone else's quota scam we're detecting...";
+      other_cheaters = setadd(other_cheaters, owner);
+      owner.owned_objects = setadd(owner.owned_objects, x);
+      this.lost_souls = setremove(this.lost_souls, x);
+    endif
+  endif
+  this.lost_souls = setremove(this.lost_souls, x);
+endfor
+if ($quota_utils.byte_based)
+  if (cheater)
+    $quota_utils:summarize_one_user(who);
+  endif
+  if (other_cheaters)
+    fork (0)
+      for x in (other_cheaters)
+        $quota_utils:summarize_one_user(x);
+      endfor
+    endfork
+  endif
+endif
+.
+
+@verb #63:"gc" this none this
+@program #63:gc
+for x in (this.orphans)
+  if ((!valid(x)) || ((x.owner != $hacker) && (x in x.owner.owned_objects)))
+    this.orphans = setremove(this.orphans, x);
+  endif
+endfor
+.
+
+@verb #63:"moveto" this none this
+@program #63:moveto
+pass(#-1);
+.
+
+@verb #63:"kill_all_tasks" this none this rxd #2
+@program #63:kill_all_tasks
+"kill_all_tasks ( object being recycled )";
+" -- kill all tasks involving this now-recycled object";
+((caller == this) || (caller == #0)) || raise(E_PERM);
+{object} = args;
+((typeof(object) == OBJ) || (typeof(object) == ANON)) || raise(E_INVARG);
+if (!valid(object))
+  fork (0)
+    for t in (queued_tasks())
+      for c in (`task_stack(t[1]) ! E_INVARG => {}')
+        if (object in c)
+          kill_task(t[1]);
+          continue t;
+        endif
+      endfor
+    endfor
+  endfork
+endif
+.
+
+@prop #63."orphans" {} r
+@prop #63."announce_removal_msg" "" rc
+@prop #63."nhist" 50 ""
+@prop #63."history" {} ""
+;;#63.("history") = {{#133, #136}, {#133, #137}, {#133, #146}, {#133, #146}, {#133, #153}, {#133, #157}}
+@prop #63."lost_souls" {} rc
+;;#63.("lost_souls") = {#136, #137, #146, #153, #157}
+;;#63.("aliases") = {"Recycling Center", "Center"}
+;;#63.("description") = "Object reuse. Call $recycler:_create() to create an object (semantics the same as create()), $recycler:_recycle() to recycle an object. Will create a new object if nothing available in its contents. Note underscores, to avoid builtin :recycle() verb called when objects are recycled. Uses $building_utils:recreate() to prepare objects."
+;;#63.("object_size") = {13313, 1641541193}

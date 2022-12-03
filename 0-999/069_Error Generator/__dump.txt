@@ -1,0 +1,147 @@
+@create $root_class named Error Generator:Error Generator
+@verb #69:"raise" this none this
+@program #69:raise
+raise(@args);
+"this:(this.names[toint(args[1]) + 1])()";
+.
+
+@verb #69:"E_NONE" this none this
+@program #69:E_NONE
+"... hmmm... don't know how to raise E_NONE...";
+return E_NONE;
+.
+
+@verb #69:"E_TYPE" this none this
+@program #69:E_TYPE
+"...raise E_TYPE ...";
+1[2];
+.
+
+@verb #69:"E_DIV" this none this
+@program #69:E_DIV
+"...raise E_DIV ...";
+1 / 0;
+.
+
+@verb #69:"E_PERM" this none this
+@program #69:E_PERM
+"...raise E_PERM ...";
+this.owner.password;
+.
+
+@verb #69:"E_PROPNF" this none this
+@program #69:E_PROPNF
+"...raise E_PROPNF ...";
+this.a;
+.
+
+@verb #69:"E_VERBNF" this none this
+@program #69:E_VERBNF
+"...raise E_VERBNF ...";
+this:a();
+.
+
+@verb #69:"E_VARNF" this none this
+@program #69:E_VARNF
+"...raise E_VARNF ...";
+a;
+.
+
+@verb #69:"E_INVIND" this none this
+@program #69:E_INVIND
+"...raise E_INVIND ...";
+#-1.a;
+.
+
+@verb #69:"E_RECMOVE" this none this
+@program #69:E_RECMOVE
+move(this, this);
+.
+
+@verb #69:"E_MAXREC" this none this
+@program #69:E_MAXREC
+"...raise E_MAXREC ...";
+this:(verb)();
+.
+
+@verb #69:"E_RANGE" this none this
+@program #69:E_RANGE
+"...raise E_RANGE ...";
+{}[1];
+.
+
+@verb #69:"E_ARGS" this none this
+@program #69:E_ARGS
+"...raise E_ARGS ...";
+toint();
+.
+
+@verb #69:"E_NACC" this none this
+@program #69:E_NACC
+"...raise E_NACC ...";
+move($hacker, this);
+.
+
+@verb #69:"E_INVARG" this none this
+@program #69:E_INVARG
+"...raise E_INVARG ...";
+parent(#-1);
+.
+
+@verb #69:"E_QUOTA" this none this rxd #2
+@program #69:E_QUOTA
+set_task_perms($no_one);
+"...raise E_QUOTA ...";
+create($thing);
+.
+
+@verb #69:"accept" this none this
+@program #69:accept
+return 0;
+.
+
+@verb #69:"name" this none this
+@program #69:name
+return toliteral(args[1]);
+"return this.names[toint(args[1]) + 1];";
+.
+
+@verb #69:"toerr" this none this
+@program #69:toerr
+"toerr -- given a string or a number, return the corresponding ERR.";
+"If not found or an execution error, return -1.";
+if (typeof(string = args[1]) == STR)
+  for e in (this.all_errors)
+    if (tostr(e) == string)
+      return e;
+    endif
+  endfor
+elseif (typeof(number = args[1]) == INT)
+  for e in (this.all_errors)
+    if (toint(e) == number)
+      return e;
+    endif
+  endfor
+endif
+return -1;
+.
+
+@verb #69:"match_error" this none this
+@program #69:match_error
+"match_error -- searches for tostr(E_WHATEVER) in a string, returning the ERR, returns -1 if no error string is found.";
+string = args[1];
+for e in (this.all_errors)
+  if (index(string, tostr(e)))
+    return e;
+  endif
+endfor
+return -1;
+.
+
+@prop #69."names" {} rc
+;;#69.("names") = {"E_NONE", "E_TYPE", "E_DIV", "E_PERM", "E_PROPNF", "E_VERBNF", "E_VARNF", "E_INVIND", "E_RECMOVE", "E_MAXREC", "E_RANGE", "E_ARGS", "E_NACC", "E_INVARG", "E_QUOTA", "E_FLOAT"}
+@prop #69."all_errors" {} r
+;;#69.("all_errors") = {E_NONE, E_TYPE, E_DIV, E_PERM, E_PROPNF, E_VERBNF, E_VARNF, E_INVIND, E_RECMOVE, E_MAXREC, E_RANGE, E_ARGS, E_NACC, E_INVARG, E_QUOTA, E_FLOAT}
+;;#69.("aliases") = {"Error Generator"}
+;;#69.("description") = {"Object to automatically generate errors.", "", "raise(error) actually raises the error."}
+;;#69.("object_size") = {12480, 1641541193}

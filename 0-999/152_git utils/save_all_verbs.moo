@@ -59,6 +59,10 @@ for object in [#0..max_object]
         endif
       endtry
     endfor
+    if (!is_player(object))
+      dump_name = tostr("verbs/", dir_str, obj_num_str, "_" + object.name + "/__dump.txt");
+      $git_utils:save_dump(object, dump_name);
+    endif
   endif
 endfor
 return player:notify("All verbs successfully saved to files.");

@@ -1,0 +1,299 @@
+@create $generic_options named Mail Options:Mail Options
+@verb #65:"actual" this none this
+@program #65:actual
+if (i = args[1] in {"noinclude", "sender"})
+  return {{{"include", "all"}[i], !args[2]}};
+else
+  return {args};
+endif
+.
+
+@verb #65:"parse_@mail" this none this
+@program #65:parse_@mail
+"... we'll take anything...";
+raw = args[2];
+if (raw == 1)
+  "...+@mail => @mailo=new";
+  return {args[1], "new"};
+else
+  return args[1..2];
+endif
+.
+
+@verb #65:"parse_sticky parse_manymsgs" this none this
+@program #65:parse_sticky
+{oname, raw, data} = args;
+if (typeof(raw) == LIST)
+  if (length(raw) > 1)
+    return "Too many arguments.";
+  endif
+  raw = raw[1];
+elseif (typeof(raw) == INT)
+  return {oname, raw && ((oname == "manymsgs") ? 20 | 1)};
+endif
+if ((value = $code_utils:toint(raw)) == E_TYPE)
+  return tostr("`", raw, "'?  Number expected.");
+endif
+return {oname, value};
+.
+
+@verb #65:"parse_replyto" this none this
+@program #65:parse_replyto
+{oname, raw, data} = args;
+if (typeof(raw) == STR)
+  raw = $string_utils:explode(raw, ",");
+elseif (typeof(raw) == INT)
+  return raw ? "You need to give one or more recipients." | {oname, 0};
+endif
+value = $mail_editor:parse_recipients({}, raw);
+if (value)
+  return {oname, value};
+else
+  return "No valid recipients in list.";
+endif
+.
+
+@verb #65:"show_manymsgs" this none this
+@program #65:show_manymsgs
+value = this:get(@args);
+if (value)
+  return {tostr(value), {tostr("Query when asking for ", value, " or more messages.")}};
+else
+  return {0, {"Willing to be spammed with arbitrarily many messages/headers"}};
+endif
+.
+
+@verb #65:"show_sticky" this none this
+@program #65:show_sticky
+value = this:get(@args);
+if (value)
+  return {value, {"Sticky folders:  mail commands default to whatever", "mail collection the previous successful command looked at."}};
+else
+  return {0, {"Teflon folders:  mail commands always default to `on me'."}};
+endif
+.
+
+@verb #65:"show_@mail" this none this
+@program #65:show_@mail
+if (value = this:get(@args))
+  return {"", {tostr("Default message sequence for @mail:  ", (typeof(value) == STR) ? value | $string_utils:from_list(value, " "))}};
+else
+  default = $mail_agent.("player_default_@mail");
+  return {0, {tostr("Default message sequence for @mail:  ", (typeof(default) == STR) ? default | $string_utils:from_list(default, " "))}};
+endif
+.
+
+@verb #65:"show_replyto" this none this
+@program #65:show_replyto
+if (value = this:get(@args))
+  return {"", {tostr("Default Reply-to:  ", $mail_agent:name_list(@value))}};
+else
+  return {0, {"No default Reply-to: field"}};
+endif
+.
+
+@verb #65:"show" this none this
+@program #65:show
+if (o = (name = args[2]) in {"sender", "noinclude"})
+  args[2] = {"all", "include"}[o];
+  return {@pass(@args), tostr("(", name, " is a synonym for -", args[2], ")")};
+else
+  return pass(@args);
+endif
+.
+
+@verb #65:"check_replyto" this none this
+@program #65:check_replyto
+"... must be object, list of objects, or false...";
+value = args[1];
+if (typeof(value) == OBJ)
+  return {{value}};
+elseif (!this:istype(value, {{OBJ}}))
+  return $string_utils:capitalize("Object or list of objects expected.");
+else
+  return {value};
+endif
+.
+
+@verb #65:"show_netmail" this none this rxd #2
+@program #65:show_netmail
+if (value = this:get(@args))
+  return {value, {"Have MOO-mail automatically forwarded to me at", "my registered email-address."}};
+else
+  return {value, {"Receive MOO-mail here on the MOO."}};
+endif
+"Last modified Tue Jun  1 02:10:08 1993 EDT by Edison@OpalMOO (#200).";
+.
+
+@verb #65:"check_netmail" this none this rxd #2
+@program #65:check_netmail
+":check_netmail(value) => Makes sure the email-address is one that can actually be used by $network:sendmail().";
+"The actual value sent is not checked since it can only be a boolean flag.  The player's email_address property is what is checked.";
+"Possible situations where the address would be unusable are when the address is invalid or we can't connect to the site to send mail.";
+"Returns a string error message if unusable or {value} otherwise.";
+if (caller != this)
+  return E_PERM;
+endif
+if (args[1] && (reason = $network:email_will_fail($wiz_utils:get_email_address(player))))
+  return tostr("Invalid registered email_address: ", reason);
+endif
+return args;
+.
+
+@verb #65:"show_expire" this none this
+@program #65:show_expire
+value = this:get(args[1], "expire");
+if (value < 0)
+  return {1, {"Messages will not expire."}};
+else
+  return {value, {tostr("Unkept messages expire in ", $time_utils:english_time(value || $mail_agent.player_expire_time), value ? "" | " (default)")}};
+endif
+.
+
+@verb #65:"parse_expire" this none this
+@program #65:parse_expire
+{oname, value, data} = args;
+if ((typeof(value) == STR) && index(value, " "))
+  value = $string_utils:explode(value, " ");
+  if (!value)
+    return {oname, 0};
+  endif
+endif
+if (value == 1)
+  return {oname, -1};
+elseif (typeof(value) == LIST)
+  if (length(value) > 1)
+    nval = $time_utils:parse_english_time_interval(@value);
+    if (typeof(nval) == ERR)
+      return "Time interval should be of a form like \"30 days, 10 hours and 43 minutes\".";
+    else
+      return {oname, nval};
+    endif
+  endif
+  value = value[1];
+endif
+if ((nval = $code_utils:toint(value)) || (nval == 0))
+  return {oname, (nval < 0) ? -1 | nval};
+elseif (value == "Never")
+  return {oname, -1};
+else
+  return "Number, time interval (e.g., \"30 days\"), or \"Never\" expected";
+endif
+.
+
+@verb #65:"init_for_core" this none this rx #2
+@program #65:init_for_core
+if (caller_perms().wizard)
+  for x in ({"fast_check", "idle_check", "idle_threshold"})
+    this:remove_name(x);
+    for y in ({"show", "check", "parse"})
+      delete_verb(this, (y + "_") + x);
+      delete_property(this, (y + "_") + x);
+    endfor
+  endfor
+  pass(@args);
+endif
+.
+
+@verb #65:"check_news" this none this
+@program #65:check_news
+if ((what = args[1]) in {"new", "contents", "all"})
+  return {what};
+else
+  return "Error: `news' option must be one of `new' or `contents' or `all'";
+endif
+.
+
+@verb #65:"parse_news" this none this
+@program #65:parse_news
+if (typeof(args[2]) == INT)
+  return tostr(strsub(verb, "parse_", ""), " is not a boolean option.");
+else
+  return {args[1], (typeof(args[2]) == STR) ? args[2] | $string_utils:from_list(args[2], " ")};
+endif
+.
+
+@verb #65:"show_news" this none this
+@program #65:show_news
+if ((value = this:get(@args)) == "all")
+  return {value, {"the `news' command will show all news"}};
+elseif (value == "contents")
+  return {value, {"the `news' command will show the titles of all articles"}};
+elseif (value == "new")
+  return {value, {"the `news' command will show only new news"}};
+else
+  return {0, {"the `news' command will show all news"}};
+endif
+.
+
+@verb #65:"parse_@unsend" this none this rxd #2
+@program #65:parse_@unsend
+{name, value, bleh} = args;
+if (typeof(value) == INT)
+  return tostr(name, " is not a boolean option.");
+elseif (typeof(value) == STR)
+  value = {value};
+endif
+ok = this.unsend_sequences;
+for x in (value)
+  if ((!(pos = index(x, ":"))) || (!(x[1..pos - 1] in ok)))
+    return tostr("Invalid sequence - ", x);
+  elseif (pos != rindex(x, ":"))
+    return tostr("As a preventative measure, you may not use more than one : in a sequence. The following sequence is therefore invalid - ", x);
+  endif
+endfor
+return {name, value};
+.
+
+@verb #65:"show_@unsend" this none this rxd #2
+@program #65:show_@unsend
+if (value = this:get(@args))
+  return {"", {tostr("Default message sequence for @unsend:  ", (typeof(value) == STR) ? value | $string_utils:from_list(value, " "))}};
+else
+  default = $mail_agent.("player_default_@unsend");
+  return {0, {tostr("Default message sequence for @unsend:  ", (typeof(default) == STR) ? default | $string_utils:from_list(default, " "))}};
+endif
+.
+
+@prop #65."show_include" {} rc
+;;#65.("show_include") = {"Original message will not be included in replies", "Original message will be included in replies"}
+@prop #65."show_all" {} rc
+;;#65.("show_all") = {"Replies will go to original sender only.", "Replies will go to original sender and all previous recipients."}
+@prop #65."show_nosubject" {} rc
+;;#65.("show_nosubject") = {"Mail editor will initially require a subject line.", "Mail editor will not initially require a subject line."}
+@prop #65."show_expert" {} rc
+;;#65.("show_expert") = {"Novice mail user...", "Expert mail user..."}
+@prop #65."show_enter" {} rc
+;;#65.("show_enter") = {"Mail editor will not start with an implicit `enter' command.", "Mail editor will start with an implicit `enter' command."}
+@prop #65."type_manymsgs" {} rc
+;;#65.("type_manymsgs") = {0}
+@prop #65."type_@mail" {} rc
+;;#65.("type_@mail") = {2, {2}}
+@prop #65."type_replyto" {} rc
+;;#65.("type_replyto") = {1, {1}}
+@prop #65."type_expire" {} rc
+;;#65.("type_expire") = {0}
+@prop #65."show_followup" {} rc
+;;#65.("show_followup") = {"No special reply action for messages with non-player recipients.", "Replies go only to first non-player recipient if any."}
+@prop #65."show_resend_forw" {} rc
+;;#65.("show_resend_forw") = {"@resend puts player in Resent-By: header", "@resend puts player in From: header (like @forward)"}
+@prop #65."choices_rn_order" {} rc
+;;#65.("choices_rn_order") = {{"read", {".current_message folders are sorted by last read date."}}, {"send", {".current_message folders are sorted by last send date."}}, {"fixed", {".current_message folders are not sorted."}}}
+@prop #65."show_no_auto_forward" {} rc
+;;#65.("show_no_auto_forward") = {"@netforward when expiring messages", "do not @netforward messages when expiring mail"}
+@prop #65."show_expert_netfwd" {} rc
+;;#65.("show_expert_netfwd") = {"@netforward confirms before emailing messages", "@netforward doesn't confirm before emailing messages"}
+@prop #65."show_no_dupcc" {} r
+;;#65.("show_no_dupcc") = {"i want to read mail to me also sent to lists i read", "don't send me personal copies of mail also sent to lists i read"}
+@prop #65."show_no_unsend" {} r #2
+;;#65.("show_no_unsend") = {"People may @unsend unread messages they send to me", "No one may @unsend messages they sent to me"}
+@prop #65."type_@unsend" {} r #2
+;;#65.("type_@unsend") = {2, {2}}
+@prop #65."unsend_sequences" {} r #2
+;;#65.("unsend_sequences") = {"before", "after", "since", "until", "subject", "body", "last"}
+;;#65.("names") = {"include", "all", "followup", "nosubject", "expert", "enter", "sticky", "@mail", "manymsgs", "replyto", "netmail", "expire", "resend_forw", "rn_order", "no_auto_forward", "expert_netfwd", "news", "no_dupcc", "no_unsend", "@unsend"}
+;;#65.("_namelist") = "!include!noinclude!all!sender!nosubject!expert!enter!sticky!@mail!manymsgs!replyto!netmail!expire!followup!resend_forw!rn_order!no_auto_forward!expert_netfwd!news!no_dupcc!no_unsend!@unsend!"
+;;#65.("extras") = {"noinclude", "sender"}
+;;#65.("aliases") = {"Mail Options"}
+;;#65.("description") = "Options for mailing"
+;;#65.("object_size") = {21303, 1641541193}

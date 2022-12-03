@@ -1,0 +1,18 @@
+@create $root_class named Time Stuff:Time Stuff,Stuff
+@verb #64:"time" this none this xd
+@program #64:time
+{?local_offset = 0.0} = args;
+base_time = time();
+global_offset = this.global_offset;
+time = base_time + global_offset;
+return (local_offset == 0.0) ? time | toint(tofloat(time) / local_offset);
+.
+
+@verb #64:"ctime" this none this xd
+@program #64:ctime
+return ctime(this:time());
+.
+
+@prop #64."global_offset" 6307200000 rc
+;;#64.("aliases") = {"Time Stuff", "Stuff"}
+;;#64.("object_size") = {1644, 1669967999}

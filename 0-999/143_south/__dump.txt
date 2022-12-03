@@ -1,0 +1,5 @@
+@create $exit named south:south
+;;#143.("source") = #141
+;;#143.("dest") = #137
+;;#143.("aliases") = {"south"}
+;;#143.("object_size") = {0, 0}

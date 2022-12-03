@@ -1,0 +1,54 @@
+@create $root_class named Limbo:The Body Bag
+@verb #15:"acceptable" this none this
+@program #15:acceptable
+what = args[1];
+return is_player(what) && (!(what in connected_players()));
+.
+
+@verb #15:"confunc" this none this
+@program #15:confunc
+(caller == #0) || raise(E_PERM);
+{who} = args;
+"this:eject(who)";
+if (!$recycler:valid(home = who.home))
+  clear_property(who, "home");
+  home = who.home;
+  if (!$recycler:valid(home))
+    home = who.home = $player_start;
+  endif
+endif
+"Modified 08-22-98 by TheCat to foil people who manually set their home to places they shouldn't.";
+if ((!home:acceptable(who)) || (!home:accept_for_abode(who)))
+  home = $player_start;
+endif
+try
+  move(who, home);
+except (ANY)
+  move(who, $player_start);
+endtry
+who.location:announce_all_but({who}, who.name, " has connected.");
+.
+
+@verb #15:"who_location_msg" this none this rxd #36
+@program #15:who_location_msg
+return $player_start:who_location_msg(@args);
+.
+
+@verb #15:"moveto" this none this rxd #36
+@program #15:moveto
+"Don't go anywhere.";
+.
+
+@verb #15:"eject" this none this
+@program #15:eject
+if ($perm_utils:controls(caller_perms(), this))
+  if ((what = args[1]).wizard && (what.location == this))
+    move(what, what.home);
+  else
+    return pass(@args);
+  endif
+endif
+.
+
+;;#15.("aliases") = {"The Body Bag"}
+;;#15.("object_size") = {3784, 1669929999}

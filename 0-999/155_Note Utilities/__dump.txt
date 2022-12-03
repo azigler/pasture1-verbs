@@ -1,0 +1,804 @@
+@create $generic_utils named Note Utilities:Generic Note Storage Utilities,Note,Storage,Utilities,Note Storage Utilities,Storage Utilities,Generic
+@verb #155:"print_category_tree*_with_notes" this none this
+@program #155:print_category_tree_with_notes
+":print_category_tree*_with_notes([INT menuize, INT silent, INT <starting id>, INT debug]) => LIST";
+"Print the entire list of categories as a hierarchical tree.";
+"If the verb is 'print_category_tree_with_notes', the titles of notes will be printed under each category.";
+"If menuize is true, each category or note will be prefixed with a number for selection from a menu.";
+"If silent is true, the tree won't actually be printed, but the return result will still be returned as if the tree had been printed.";
+"If starting id is specified, that's the first category to be processed.";
+"Depth is the number of subcategories to display. See documentation for print_category.";
+"If debug is true, the category and note IDs will be printed in parenthesis.";
+"See 'print_category' documentation for return value.";
+{?menuize = 0, ?silent = 0, ?starting_id = 1, ?depth = 0, ?debug = this:get_option("debug", player)} = args;
+indent = "|--";
+if (!silent)
+  player:tell("[Root]");
+endif
+verb_call = (verb == "print_category_tree_with_notes") ? "print_category_with_notes" | "print_category";
+return this:(verb_call)(starting_id, indent, debug, menuize, silent, depth);
+.
+
+@verb #155:"print_category*_with_notes" this none this
+@program #155:print_category_with_notes
+":print_category*_with_notes(INT category parent id[, STR prefix, INT debug, INT menuize, INT silent]) => LIST";
+"Beginning with the parent ID <id>, recurse through the category tree and print each name.";
+"If the verb is 'print_category_with_notes', note titles will be printed below the categories they're in.";
+"If specified, <prefix> will be prefixed in front of each category name. This should probably not be changed from the default, as certain assumptions are made in this verb about what prefix may be.";
+"If <debug> is true, category and note IDs will be printed in parenthesis after the category name.";
+"If <menuize> is any true value, each entry will be prefixed with a number suitable for selecting from a menu. If menuize is specifically 2 and the verb name includes '_with_notes', notes are included in the menu.";
+"";
+"If silent is true, the tree won't actually be printed, but the return result will still be returned as if the tree had been printed.";
+"Depth refers to how many sub-categories you want to display for each category. The default value, 0, means to print as many categories as there are.";
+"The return value is a list of all displayed menu IDs. Category IDs are prefixed with either a 'C' for category or an 'N' for note. e.g. C5 indicates the category with ID 5.";
+{id, ?prefix = "  ", ?debug = 0, ?menuize = 0, ?silent = 0, ?depth = 0} = args;
+try
+  displayed_depth = 1;
+  print_notes = verb == "print_category_with_notes";
+  subcategories = this:subcategories_of(id, 1);
+  subcategory_length = length(subcategories);
+  "Entry_prefix is anything that gets prefixed per-iteration. Right now this is only used to display menu numbers.";
+  entry_prefix = note_entry_prefix = "";
+  "Menu_length keeps count of which menu option we're presenting. It gets incremented each time and stored in task_local so as to be available during recursion.";
+  menu_length = ((menuize > 0) && (typeof(task_local()) == NUM)) ? task_local() | 1;
+  ret = {};
+  if (print_notes)
+    for x in (this:notes_in_category(id))
+      if (menuize == 2)
+        ret = {@ret, tostr("N", x)};
+        note_entry_prefix = tostr("[[bold][yellow]", menu_length, "[normal]] ");
+        menu_length = menu_length + 1;
+      endif
+      if (!silent)
+        player:tell(prefix, note_entry_prefix, this:get_note_title(x), debug ? tostr(" {[red]", x, "[normal]}") | "");
+      endif
+    endfor
+  endif
+  for i in [1..subcategory_length]
+    {id, name} = subcategories[i];
+    if (menuize > 0)
+      ret = {@ret, tostr("C", id)};
+      entry_prefix = tostr("[[bold][yellow]", menu_length, "[normal]] ");
+      menu_length = menu_length + 1;
+    endif
+    if (!silent)
+      player:tell(prefix, entry_prefix, "(", name, ")", debug ? tostr(" {[red]", id, "[normal]}") | "");
+    endif
+    if (i == subcategory_length)
+      "The last category shouldn't point to nothing with the solid bar, so we scooch it back over.";
+      indented_prefix = tostr(prefix[1..$ - 4], "    |--");
+    else
+      indented_prefix = tostr(prefix[1..$ - 2], "  |--");
+    endif
+    if ((depth == 0) || (displayed_depth < depth))
+      displayed_depth = displayed_depth + 1;
+      set_task_local(menu_length);
+      ret = {@ret, @this:(verb)(id, indented_prefix, debug, menuize, silent)};
+      menu_length = task_local();
+    endif
+  endfor
+  "Since we're printing files at the top, we need to make sure menu_length gets stored regardless of the displayed depth.";
+  set_task_local(menu_length);
+  return ret;
+except error (ANY)
+  $debug(#7, toliteral(error));
+endtry
+.
+
+@verb #155:"subcategories_of" this none this
+@program #155:subcategories_of
+":subcategories_of(INT id[, INT include name) => LIST";
+"Return a list of IDs of categories with <id> as their parent. If include name is true, the returned list will include the ID and the name.";
+{id, ?include_name = 0} = args;
+handle = this.utils:open(this.database);
+select = include_name ? "id, name" | "id";
+data = sqlite_execute(handle, tostr("SELECT ", select, " FROM categories WHERE parent_id = ?;"), {id});
+if (!include_name)
+  return slice(data);
+else
+  return data;
+endif
+.
+
+@verb #155:"add_category" this none this
+@program #155:add_category
+":add_category(INT parent ID, STR name) => INT category ID";
+"Add the category named <name> with the parent <parent>.";
+{parent, name} = args;
+handle = this.utils:open(this.database);
+result = sqlite_execute(handle, "INSERT INTO categories(name, parent_id) VALUES (?, ?);", {name, parent});
+if (result == {})
+  return sqlite_last_insert_row_id(handle);
+endif
+.
+
+@verb #155:"category_name" this none this
+@program #155:category_name
+":category_name(INT id) => STR";
+"Return the English name of the category specified by <id>";
+{id} = args;
+handle = this.utils:open(this.database);
+result = sqlite_execute(handle, "SELECT name FROM categories WHERE id=?;", {id});
+return (result == {}) ? raise(E_NONE, "Category ID not found") | tostr(result[1][1]);
+.
+
+@verb #155:"add_tag" this none this
+@program #155:add_tag
+":add_tag(STR tag name[, STR tag color]) => INT tag ID";
+"Add a new tag to the list of available tags, along with an optional color.";
+"If the tag already exists, only the color is changed.";
+{tag, ?color = 0} = args;
+handle = this.utils:open(this.database);
+if ((id = sqlite_execute(handle, "SELECT id FROM tags WHERE name = ?;", {tag})) != {})
+  if (color == 0)
+    "Nothing to update.";
+    return id[1][1];
+  else
+    sqlite_execute(handle, "UPDATE tags SET color = ? WHERE id = ?;", {color, id[1][1]});
+    return id[1][1];
+  endif
+else
+  if (!color)
+    fields = "name";
+    values = "?";
+    data = {tag};
+  else
+    fields = "name, color";
+    values = "?, ?";
+    data = args;
+  endif
+  result = sqlite_execute(handle, tostr("INSERT INTO tags(", fields, ") VALUES(", values, ");"), data);
+  if (result == {})
+    return sqlite_last_insert_row_id(handle);
+  endif
+endif
+.
+
+@verb #155:"display_tag" this none this
+@program #155:display_tag
+":display_tag(INT id) => STR";
+"Returns the name of a tag. If color is specified, the appropriate color is applied.";
+"If the tag doesn't exist, E_INVARG is raised.";
+{id} = args;
+handle = this.utils:open(this.database);
+tag = sqlite_execute(handle, "SELECT name, color FROM tags WHERE id=?;", {id});
+if (tag == {})
+  return raise(E_INVARG, "Invalid tag");
+else
+  {name, color} = tag[1];
+  return (color == "NULL") ? name | tostr($ansi_utils:hr_to_code(color), name, "[normal]");
+endif
+.
+
+@verb #155:"delete_tag" this none this
+@program #155:delete_tag
+":delete_tag(INT id) => 0";
+"Delete tag <id> completely and remove references to it from any notes.";
+{tag} = args;
+handle = this.utils:open(this.database);
+sqlite_execute(handle, "DELETE FROM tags WHERE id = ?;", {tag});
+sqlite_execute(handle, "DELETE FROM note_tags WHERE tag = ?;", {tag});
+.
+
+@verb #155:"add_note" this none this
+@program #155:add_note
+":add_note(STR title, LIST body) => INT";
+"Adds a new note. This does NOT add it to any categories or add any tags.";
+"Returns the ID of the newly added note.";
+{title, body, ?who = player} = args;
+if ((!caller_perms().wizard) && (who != player))
+  who = player;
+endif
+handle = this.utils:open(this.database);
+result = sqlite_execute(handle, "INSERT INTO notes(title, body) VALUES(?, ?);", {title, toliteral(body)});
+if (result == {})
+  note_id = sqlite_last_insert_row_id(handle);
+else
+  raise(E_INVARG, "Note creation failed.");
+endif
+sqlite_execute(handle, "INSERT INTO note_metadata(note, author, author_objnum, created, modified) VALUES(?, ?, ?, strftime('%s','now'), strftime('%s','now'));", {note_id, who:title(), toliteral(who)});
+return note_id;
+.
+
+@verb #155:"delete_note" this none this
+@program #155:delete_note
+":delete_note(INT id) => 0";
+"Permanently delete a note.";
+{id} = args;
+handle = this.utils:open(this.database);
+sqlite_query(handle, "BEGIN TRANSACTION;");
+sqlite_execute(handle, "DELETE FROM note_categories WHERE note = ?;", {id});
+sqlite_execute(handle, "DELETE FROM notes WHERE rowid = ?;", {id});
+sqlite_query(handle, "COMMIT;");
+.
+
+@verb #155:"add_note_to_category" this none this
+@program #155:add_note_to_category
+":add_note_to_category(INT note id, INT category ID) => 0";
+"Add the note <id> to the category <id>. Since notes are pointers, one note can be placed into multiple categories. As such, this verb will make no attempt to 'move' a note.";
+{note, category} = args;
+handle = this.utils:open(this.database);
+sqlite_execute(handle, "INSERT INTO note_categories(note, category) VALUES(?, ?);", {note, category});
+.
+
+@verb #155:"remove_note_from_category" this none this
+@program #155:remove_note_from_category
+":remove_note_from_category(INT note id, INT category ID) => 0";
+"Remove the note <note id> from the category <category id>.";
+{note, category} = args;
+handle = this.utils:open(this.database);
+sqlite_execute(handle, "DELETE FROM note_categories WHERE note = ? AND category = ?;", {note, category});
+.
+
+@verb #155:"notes_in_category" this none this
+@program #155:notes_in_category
+":notes_in_category(INT category id) => LIST";
+"Return a list of all the note IDs filed in <category ID>";
+{category} = args;
+handle = this.utils:open(this.database);
+result = sqlite_execute(handle, "SELECT note FROM note_categories WHERE category = ?;", {category});
+return slice(result, 1);
+.
+
+@verb #155:"get_note" this none this
+@program #155:get_note
+":get_note(INT id) => LIST";
+"Return a list of {title, body} for the given note <id>.";
+"If such a note doesn't exist, E_INVARG is raised.";
+{note} = args;
+handle = this.utils:open(this.database);
+data = sqlite_execute(handle, "SELECT title, body FROM notes WHERE rowid = ?;", {note});
+if (data == {})
+  return raise(E_INVARG, "Note ID not found");
+else
+  return {data[1][1], $no_one:eval(data[1][2])[2]};
+endif
+.
+
+@verb #155:"all_tags" this none this
+@program #155:all_tags
+":all_tags() => LIST";
+"Return a list of all tag IDs.";
+handle = this.utils:open(this.database);
+return slice(sqlite_query(handle, "SELECT id FROM tags;"), 1);
+.
+
+@verb #155:"display_note" this none this
+@program #155:display_note
+":display_note(INT <note ID>) => output";
+"Retrieve the note indicated by <note ID> and print its contents to the player.";
+"TODO: Print tags too.";
+{note} = args;
+{title, entry} = this:get_note(note);
+{author, author_obj, created, modified} = `this:note_metadata(note) ! E_INVARG => {"Unknown", #-1, 0, 0}';
+line = $ansi_utils:space(player:linelen(), "-");
+player:tell(line);
+player:tell(title);
+player:tell(line);
+player:tell_lines_suspended(entry);
+tags = this:tags_for_note(note);
+if (tags != {})
+  player:tell($string_utils:center("Tags", length(line), "-"));
+  player:tell(this:tag_title_list(tags));
+endif
+player:tell($string_utils:center("Info", length(line), "-"));
+author_text = tostr("Author: ", author, (author_obj != #-1) ? tostr("(", author_obj, ")") | "");
+reference_text = tostr("Note ID: ", note);
+created_text = tostr("Created: ", (!created) ? "Unknown" | $time_utils:mmddyy(created));
+modified_text = tostr("Last Modified: ", (!modified) ? "Unknown" | $time_utils:mmddyy(modified));
+len = player:linelen();
+if ((length(author_text) + length(reference_text)) >= len)
+  player:tell(author_text, reference_text);
+else
+  player:tell(author_text, $string_utils:right(reference_text, len - length(author_text)));
+endif
+if ((length(created_text) + length(modified_text)) >= len)
+  player:tell(created_text, " ", modified_text);
+else
+  player:tell(created_text, $string_utils:right(modified_text, len - length(created_text)));
+endif
+player:tell(line);
+.
+
+@verb #155:"standard_menu" this none this
+@program #155:standard_menu
+":standard_menu(LIST <menu options>[, STR <user input>, INT <ignore categories>]) => ANY | $failed_match";
+"Presents a menu of choices to the user and attempts to interpret it in the context of notes and categories. That is to say, if the user enters a number, it will first check to see if that number is a valid menu choice. If it's not valid, or the user enters other input, it's assumed to be a search string.";
+"If <user input> is supplied and isn't an empty string, that will be used instead of presenting the player with a separate input prompt.";
+"If <ignore categories> is true, categories won't be searched.";
+"NOTE: This verb is /interactive/. It will prompt the player for additional information if necessary.";
+"The return value will either be a single choice from the available menu or $failed_match if no match was found.";
+"--";
+"TODO: Investigate how much of this we can move into SQLite itself. The whole search could be a query and cut out all of this code, who knows.";
+{menu, ?choice = "", ?ignore_categories = 0} = args;
+no_input = choice == "";
+if (no_input)
+  choice = $command_utils:read();
+endif
+if (choice == "")
+  return $failed_match;
+elseif (no_input && $string_utils:is_numeric(choice))
+  "Only match to numeric input options if we actually saw the menu. Otherwise, assume they're referencing an ID directly.";
+  option = toint(choice);
+  if ((option > 0) && (option <= length(menu)))
+    return menu[option];
+  endif
+endif
+"Not a menu option. We'll try it as a text search. Should we alert the player?";
+"-- Parse metadata search options";
+"Possible options:";
+"  tags: Comma separated list of tags.";
+"  name: Comma separated list of titles.";
+"  content: A string of text to search for.";
+"  id: The ID of a note to open.";
+"--";
+search_tags = search_names = {};
+search_content = "";
+parsing = $string_utils:is_numeric(choice) ? "id" | "name";
+total_criteria = 0;
+for x in (explode(choice, " "))
+  if (x in {"tags:", "tag:"})
+    parsing = "tags";
+    continue;
+  elseif (x in {"name:", "title:"})
+    parsing = "name";
+    continue;
+  elseif (x in {"content:", "body:", "contents:"})
+    parsing = "content";
+    continue;
+  elseif (x in {"id:"})
+    parsing = "id";
+    continue;
+  endif
+  if ((parsing != "content") && (x[$] == ","))
+    x = x[1..$ - 1];
+  endif
+  if (parsing == "tags")
+    search_tags = setadd(search_tags, x);
+  elseif (parsing == "name")
+    search_names = setadd(search_names, x);
+  elseif (parsing == "content")
+    search_content = tostr(search_content, x, " ");
+  elseif (parsing == "id")
+    "ID searching supercedes all other searches, obviously, so we take a shortcut here return if it's a valid ID.";
+    player:tell("([red]debug[normal]) Searching for ID: ", x);
+    if ((search_id = tostr("N", x)) in menu)
+      return search_id;
+    else
+      return $failed_match;
+    endif
+  endif
+endfor
+total_criteria = ((total_criteria + (search_names != {})) + (search_tags != {})) + (search_content != "");
+if (this:get_option("debug"))
+  player:tell("([red]debug[normal]) Searching for tags: ", toliteral(search_tags));
+  player:tell("([red]debug[normal]) Searching for names: ", toliteral(search_names));
+  player:tell("([red]debug[normal]) Searching for content: ", search_content);
+  player:tell("([red]debug[normal]) Searchable criteria: ", total_criteria);
+  player:tell();
+endif
+matches = match_names = {};
+last_category = 1;
+breadcrumb_cache = [];
+start = ftime(1);
+shown_search_msg = 0;
+if (search_content != "")
+  "For performance, we use SQLite full text search first. Once we have these IDs, we can skip all others in the loop below while still getting the category data we need for breadcrumbs.";
+  search_content_results = this:search_note_body(search_content);
+endif
+for x in (menu)
+  "We have to do a mildly silly trick here to keep track of the last category ID because a single note can belong to multiple categories. As such, we'd not know WHICH category to choose for the breadcrumb.";
+  if (x[1] == "C")
+    last_category = toint(x[2..$]);
+    if (ignore_categories)
+      continue x;
+    endif
+  endif
+  if ((search_content != "") && ((toint(x[2..$]) in search_content_results) == 0))
+    continue;
+  endif
+  if (this:get_option("show_all_occurances") && (x in matches))
+    "TODO: Make an option to show all or just the first.";
+    continue;
+  endif
+  "All criteria given have to match before we return a result. So matched will increment each time we get a match and then, at the end, get compared with the total tags present. If they're the same, the match is returned. If not, it's thrown away for not meeting all criteria.";
+  matched = 0;
+  name = this:((x[1] == "C") ? "category_name" | "note_name")(x[2..$]);
+  matched_names = 0;
+  if (search_names != {})
+    for name_search in (search_names)
+      if (pcre_match(name, name_search))
+        matched_names = matched_names + 1;
+      endif
+    endfor
+    if (matched_names == length(search_names))
+      matched = matched + 1;
+    endif
+  endif
+  if (search_tags != {})
+    tag_success = 1;
+    all_tags = this:tags_for_note(x[2..$]);
+    "Map english tags to tag IDs...";
+    for tag in (search_tags)
+      id = this:find_tag_by_name(tag);
+      if ((id == $failed_match) || (!(id in all_tags)))
+        "No point in continuing. It's all tags or nothin'.";
+        tag_success = 0;
+        break;
+      endif
+    endfor
+    if (tag_success)
+      matched = matched + 1;
+    endif
+  endif
+  if ((search_content != "") && (search_content_results != {}))
+    matched = matched + 1;
+  endif
+  if (matched >= total_criteria)
+    matches = {@matches, x};
+    crumb_name = tostr(x[1], "__", last_category);
+    if (maphaskey(breadcrumb_cache, crumb_name))
+      crumb = breadcrumb_cache[crumb_name];
+    else
+      crumb = this:category_breadcrumb(last_category, x[1] == "N");
+      breadcrumb_cache[crumb_name] = crumb;
+    endif
+    match_names = {@match_names, tostr(name, " (", crumb, ")")};
+  endif
+endfor
+if (!matches)
+  return $failed_match;
+else
+  description = {};
+  if (search_names != {})
+    description = {@description, tostr("with the name ", $string_utils:english_list(search_names))};
+  endif
+  if (search_tags != {})
+    description = {@description, tostr("with the ", $s("tag", length(search_tags)), " ", $string_utils:english_list(search_tags))};
+  endif
+  if (search_content != "")
+    description = {@description, tostr("containing the string \"", search_content, "\"")};
+  endif
+  player:tell("There ", (length(matches) == 1) ? "is" | "are", " ", length(matches), " ", $s("option", length(matches)), " ", $string_utils:english_list(description), ". Please choose:");
+  return matches[$menu_utils:menu(match_names)];
+endif
+.
+
+@verb #155:"note_name" this none this
+@program #155:note_name
+":note_name(INT id) => STR";
+"Return the title of note <id>";
+"If such a note doesn't exist, E_INVARG is raised.";
+{note} = args;
+set_thread_mode(0);
+handle = this.utils:open(this.database);
+data = sqlite_execute(handle, "SELECT title FROM notes WHERE rowid = ?;", {note});
+if (data == {})
+  return raise(E_INVARG, tostr("Note ID ", note, " not found"));
+else
+  return tostr(data[1][1]);
+endif
+.
+
+@verb #155:"category_breadcrumb" this none this
+@program #155:category_breadcrumb
+":category_breadcrumb(STR <category id>[, INT <include first>]) => STR";
+"Return a string showing the hierarchy of the given category. e.g. 'Root -> Stuff -> Things";
+"If <include first> is true, the breadcrumb list will always end with the category name of <category id>.";
+{id, ?include_first = 0} = args;
+set_thread_mode(0);
+handle = this.utils:open(this.database);
+crumbs = include_first ? {this:category_name(id)} | {};
+while (1)
+  id = sqlite_execute(handle, "SELECT parent_id FROM categories WHERE id = ?;", {id})[1][1];
+  if (id == "null")
+    break;
+  else
+    crumbs = listinsert(crumbs, this:category_name(id), 1);
+  endif
+endwhile
+return $string_utils:english_list(crumbs, "Root", " -> ", " -> ", "");
+.
+
+@verb #155:"add_tag_to_note" this none this
+@program #155:add_tag_to_note
+":add_tag_to_note(INT <tag id>, INT <note id>) => 0";
+"Associate the tag specified by <tag id> with the note specified by <note id>.";
+{tag, note} = args;
+handle = this.utils:open(this.database);
+sqlite_execute(handle, "INSERT INTO note_tags(note, tag) VALUES(?, ?);", {note, tag});
+.
+
+@verb #155:"remove_tag_from_note" this none this
+@program #155:remove_tag_from_note
+":remove_tag_from_note(INT <tag id>, INT <note id>) => 0";
+"Remove the association of <tag id> from <note id>.";
+{tag, note} = args;
+handle = this.utils:open(this.database);
+sqlite_execute(handle, "DELETE FROM note_tags WHERE note = ? AND tag = ?';", {note, tag});
+.
+
+@verb #155:"tags_for_note" this none this
+@program #155:tags_for_note
+":tags_for_note(INT <id>) => LIST";
+"Return a list of tag IDs associated with the note <id>.";
+{note} = args;
+handle = this.utils:open(this.database);
+return slice(sqlite_execute(handle, "SELECT tag FROM note_tags WHERE note = ?;", {note}), 1);
+.
+
+@verb #155:"tag_title_list" this none this
+@program #155:tag_title_list
+":tag_title_list(LIST <tag IDs>) => STR";
+"Return a string of <tag IDs> spaced with tabs.";
+"e.g. some tag    another tag    more tags";
+{ids} = args;
+tags = {};
+for x in (ids)
+  tags = setadd(tags, this:display_tag(x));
+endfor
+"$string_utils.tab donks everything up, so we use four spaces. Tabs vs spaces argument over I suppose!";
+return $string_utils:from_list(tags, "    ");
+.
+
+@verb #155:"find_tag_by_name" this none this
+@program #155:find_tag_by_name
+":find_tag_by_name(STR <tag name>) => INT";
+"Attempts to identify a tag by name. If the tag isn't found, $failed_match is returned.";
+{name} = args;
+handle = this.utils:open(this.database);
+result = sqlite_execute(handle, "SELECT id FROM tags WHERE name = ?;", {name});
+return (result == {}) ? $failed_match | result[1][1];
+.
+
+@verb #155:"initialize_database" this none this
+@program #155:initialize_database
+":initialize_database() => 0";
+"Create the initial tables for the database. NOTE: This should only be done once...";
+handle = this.utils:open(this.database, (8 |. 2) |. 4);
+sqlite_query(handle, "BEGIN TRANSACTION;");
+sqlite_query(handle, "CREATE TABLE categories( id INTEGER PRIMARY KEY NOT NULL, name TEXT NOT NULL, parent_id INTEGER)");
+sqlite_query(handle, "CREATE TABLE note_categories( id INTEGER PRIMARY KEY NOT NULL, note INTEGER NOT NULL, category INTEGER NOT NULL)");
+sqlite_query(handle, "CREATE TABLE note_tags( id INTEGER PRIMARY KEY NOT NULL, note INTEGER NOT NULL, tag INTEGER NOT NULL)");
+sqlite_query(handle, "CREATE VIRTUAL TABLE notes using fts5(title, body)");
+sqlite_query(handle, "CREATE TABLE note_metadata( note INTEGER PRIMARY KEY NOT NULL, author TEXT, author_objnum TEXT, created INT, modified INT)");
+sqlite_query(handle, "CREATE TABLE tags( id INTEGER PRIMARY KEY NOT NULL, name TEXT NOT NULL, color text)");
+sqlite_query(handle, "INSERT INTO categories(name, parent_id) VALUES( 'Root', NULL);");
+sqlite_query(handle, "COMMIT;");
+.
+
+@verb #155:"search_note_body" this none this
+@program #155:search_note_body
+":search_note_body(STR <search>) => LIST";
+"Return a list of note IDs that contain <search> in the body.";
+{search} = args;
+handle = this.utils:open(this.database);
+return slice(sqlite_execute(handle, "SELECT rowid FROM notes WHERE body MATCH ?;", {search}), 1);
+.
+
+@verb #155:"main_notes_menu" this none this
+@program #155:main_notes_menu
+":main_notes_menu(INT <category ID>)[, STR <user input>]";
+"The guts of the @notes interface. This will allow you to drill down through categories.";
+"If user input is specified, it will be passed along as the menu choice.";
+{id, ?user_input = ""} = args;
+notes = this:print_category_tree_with_notes(2, user_input, id, (argstr || this:get_option("full_tree")) ? 0 | 1, this:get_option("debug"));
+choice = this:standard_menu(notes, user_input);
+if (choice == $failed_match)
+  return player:tell("Invalid selection.");
+elseif (choice[1] == "N")
+  return this:display_note(choice[2..$]);
+elseif (choice[1] == "C")
+  menu_length = 1;
+  set_task_local(menu_length);
+  return this:(verb)(choice[2..$]);
+else
+  return player:tell("That option appears to be invalid.");
+endif
+.
+
+@verb #155:"get_note_title get_note_name" this none this
+@program #155:get_note_title
+":get_note_title(INT <id>) => STR";
+"Return the title of the note <id>. If no such note exists, E_INVARG is raised.";
+{note} = args;
+set_thread_mode(0);
+handle = this.utils:open(this.database);
+data = sqlite_execute(handle, "SELECT title FROM notes WHERE rowid= ?;", {note});
+if (data == {})
+  return raise(E_INVARG, "Note ID not found");
+else
+  return data[1][1];
+endif
+.
+
+@verb #155:"get_option" this none this
+@program #155:get_option
+":get_option(STR <option name>[, OBJ <player>]) => INT";
+"Return true if <option name> is set for <player>. Player defaults to whoever invoked the verb.";
+{option, ?who = player} = args;
+if (!maphaskey(this.options, who))
+  return 0;
+else
+  return option in this.options[who];
+endif
+.
+
+@verb #155:"invoke_editor" this none this
+@program #155:invoke_editor
+":invoke_editor(STR <upload command>[, LIST <existing text>, STR <title>])";
+"Either launch the local editor or the in-line editor for editing a new or existing note.";
+"<upload command> is the MOO command that will get called with the contents of the editor.";
+{upload_command, ?text = {}, ?title = tostr($network.moo_name, " Note")} = args;
+session = $mcp:session_for(player);
+"if ((((player:edit_option(\"local\") != 1) || (session == #-1)) || (session.authentication_key == E_NONE)) || (!session:handles_package($mcp.registry:match_package(\"dns-org-mud-moo-simpleedit\"))))";
+if (1)
+  "lisdude was too lazy to rejigger local editing for chaosmoo sorry";
+  "This is... not ideal:";
+  data = $edit_utils:editor(text);
+  force_input(player, upload_command);
+  for x in (data)
+    yin();
+    force_input(player, x);
+  endfor
+  force_input(player, ".");
+else
+  $generic_editor:invoke_local_editor(title, text, upload_command, upload_command, "upload-command");
+  "bridge = $waif_bridge:request_raw_read(task_id(), title);";
+  "$verb_editor:invoke_local_editor(title, text, tostr(\"@waif-bridge \", bridge, \":\", task_id()), bridge, \"waif-bridge\");";
+  "suspend();";
+  "data = $waif_bridge.(bridge);";
+  "$waif_bridge:destroy(bridge);";
+  "return data[3];";
+endif
+.
+
+@verb #155:"set_note_text" this none this
+@program #155:set_note_text
+":set_note_text(INT <note ID>, LIST <text>)";
+"Sets the text of <note ID> to <text>.";
+{id, text} = args;
+handle = this.utils:open(this.database);
+sqlite_execute(handle, "UPDATE notes SET body = ? WHERE rowid = ?;", {toliteral(text), id});
+.
+
+@verb #155:"delete_category" this none this
+@program #155:delete_category
+":delete_category(INT <category ID>)";
+"Delete the category <category ID>. If the folder has any notes or categories in it, E_INVARG is raised.";
+{category} = args;
+if (this:notes_in_category(category) != {})
+  return raise(E_INVARG, "There are notes in that category.");
+elseif (this:subcategories_of(category) != {})
+  return raise(E_INVARG, "There are sub-categories in that category.");
+endif
+handle = this.utils:open(this.database);
+result = sqlite_execute(handle, "DELETE FROM categories WHERE id = ?;", {category});
+.
+
+@verb #155:"note_menu" this none this
+@program #155:note_menu
+":note_menu(STR <call verb>, INT <starting ID>[, STR <user input>])";
+"A standard interface for parsing a note selection menu and passing that value off to a utility function.";
+{call_verb, id, ?user_input = ""} = args;
+notes = this:print_category_tree_with_notes(2, user_input, id, (argstr || this:get_option("full_tree")) ? 0 | 1, this:get_option("debug"));
+choice = this:standard_menu(notes, user_input);
+if (choice == $failed_match)
+  return player:tell("Invalid selection.");
+elseif (choice[1] == "C")
+  menu_length = 1;
+  set_task_local(menu_length);
+  return this:(verb)(call_verb, choice[2..$]);
+elseif (choice[1] == "N")
+  note = choice[2..$];
+else
+  return player:tell("That choice appears to be invalid.");
+endif
+return this:(call_verb)(note);
+.
+
+@verb #155:"do_delete_note" this none this
+@program #155:do_delete_note
+":do_delete_note(INT <note ID>)";
+"The end all be all verb for deleting a note after presenting the player with a menu.";
+{note} = args;
+title = this:get_note_title(note);
+if ($command_utils:yes_or_no(tostr("Are you SURE you want to delete the note titled \"", title, "\"?")) == 1)
+  " $admin_utils:announce(tostr(player:nn(), \" deleted the note: \", this:category_breadcrumb(this:category_for(note)[1], 1), \" -> \", title, \" {[red]\", note, \"[normal]}\"), \"announce_notes\");";
+  this:delete_note(note);
+  player:tell("Note deleted.");
+else
+  player:tell("Aborted.");
+endif
+.
+
+@verb #155:"do_edit_note" this none this
+@program #155:do_edit_note
+":do_dedit_note(INT <note ID>)";
+"The end all be all verb for editing a note after presenting the player with a menu.";
+{note} = args;
+upload_command = tostr("@notes-set-text ", note);
+{title, body} = this:get_note(note);
+new_body = this:invoke_editor(upload_command, body, title);
+.
+
+@verb #155:"do_export_note" this none this
+@program #155:do_export_note
+":do_export_note(INT <note ID>)";
+"The end all be all verb for exporting a note after presenting the player with a menu.";
+{note} = args;
+email = this:get_email_address(player);
+if (email == $failed_match)
+  return player:tell("No e-mail address could be found registered to you.");
+else
+  {title, body} = this:get_note(note);
+  if ($command_utils:yes_or_no(tostr("Are you sure you want to e-mail the note \"", title, "\" to ", email, "?")) != 1)
+    return player:tell("Aborted.");
+  else
+    $network:sendmail(email, tostr($network.moo_name, " Note: ", title), @body);
+    player:tell("Note sent!");
+  endif
+endif
+.
+
+@verb #155:"get_email_address" this none this
+@program #155:get_email_address
+":get_email_address(OBJ <player>)";
+"Attempt to get the player's e-mail address. This verb is MOO-dependent, but should work with LambdaCore if no other modifications are made.";
+"If no e-mail could be found, return $failed_match.";
+{who} = args;
+if ($object_utils:has_callable_verb(who, "email_address") && ((address = who:email_address()) != ""))
+  return address;
+elseif (((info = `$accounts:info(who.account) ! ANY => {}') != {}) && `index(info[4], "@") ! ANY')
+  return info[4];
+else
+  return $failed_match;
+endif
+.
+
+@verb #155:"category_for" this none this
+@program #155:category_for
+":category_for(INT <note ID>)";
+"Return a list of all categories <note ID> is in.";
+{note} = args;
+handle = this.utils:open(this.database);
+return $list_utils:flatten(sqlite_execute(handle, "SELECT category FROM note_categories WHERE note = ?;", {note}));
+.
+
+@verb #155:"note_author" this none this
+@program #155:note_author
+":note_author(INT <note ID>) => LIST";
+"Return a list containing the plaintext author name at the time of writing and the object number of the author.";
+"If no author information is available, E_INVARG is raised.";
+{note} = args;
+handle = this.utils:open(this.database);
+results = sqlite_execute(handle, "SELECT author, author_objnum FROM note_metadata WHERE note=?;", {note});
+if (results == {})
+  return raise(E_INVARG, tostr("No author found for note ", note), note);
+else
+  return results[1];
+endif
+.
+
+@verb #155:"note_metadata" this none this
+@program #155:note_metadata
+":note_metadata(note) => LIST";
+"Return the complete metadata for a note.";
+"Values: {author, author object number, creation time, modification time}";
+"If no metadata is found, E_INVARG is raised with the note as the value.";
+{note} = args;
+handle = this.utils:open(this.database);
+results = sqlite_execute(handle, "SELECT * FROM note_metadata WHERE note=?;", {note});
+if (results == {})
+  return raise(E_INVARG, tostr("No metadata found for note ", note), note);
+else
+  return results[1][2..$];
+endif
+.
+
+@prop #155."utils" #156 rc
+@prop #155."database" "chaosmoo_notes.sqlite" rc
+@prop #155."options" [#128 -> {}, #139 -> {"debug", "announce_notes"}] rc
+;;#155.("aliases") = {"Generic Note Storage Utilities", "Note", "Storage", "Utilities", "Note Storage Utilities", "Storage Utilities", "Generic"}
+;;#155.("description") = "This is a placeholder parent for all the $..._utils packages, to more easily find them and manipulate them. At present this object defines no useful verbs or properties. (Filfre.)"
+;;#155.("object_size") = {0, 0}

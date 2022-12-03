@@ -1,0 +1,226 @@
+@create $thing named generic container:generic container
+@verb #8:"p*ut in*sert d*rop" any in this rxd
+@program #8:put
+if ((this.location != player) && (this.location != player.location))
+  player:tell("You can't get at ", this.name, ".");
+elseif (dobj == $nothing)
+  player:tell("What do you want to put ", prepstr, " ", this.name, "?");
+elseif ($command_utils:object_match_failed(dobj, dobjstr))
+elseif ((dobj.location != player) && (dobj.location != player.location))
+  player:tell("You don't have ", dobj.name, ".");
+elseif (!this.opened)
+  player:tell(this.name, " is closed.");
+else
+  set_task_perms(callers() ? caller_perms() | player);
+  dobj:moveto(this);
+  if (dobj.location == this)
+    player:tell(this:put_msg());
+    if (msg = this:oput_msg())
+      player.location:announce(player.name, " ", msg);
+    endif
+  else
+    player:tell(this:put_fail_msg());
+    if (msg = this:oput_fail_msg())
+      player.location:announce(player.name, " ", msg);
+    endif
+  endif
+endif
+.
+
+@verb #8:"re*move ta*ke g*et" any from this rxd
+@program #8:remove
+if (!(this.location in {player, player.location}))
+  player:tell("Sorry, you're too far away.");
+elseif (!this.opened)
+  player:tell(this.name, " is not open.");
+elseif (this.dark)
+  player:tell("You can't see into ", this.name, " to remove anything.");
+elseif ((dobj = this:match_object(dobjstr)) == $nothing)
+  player:tell("What do you want to take from ", this.name, "?");
+elseif ($command_utils:object_match_failed(dobj, dobjstr))
+elseif (!(dobj in this:contents()))
+  player:tell(dobj.name, " isn't in ", this.name, ".");
+else
+  set_task_perms(callers() ? caller_perms() | player);
+  dobj:moveto(player);
+  if (dobj.location == player)
+    player:tell(this:remove_msg());
+    if (msg = this:oremove_msg())
+      player.location:announce(player.name, " ", msg);
+    endif
+  else
+    dobj:moveto(this.location);
+    if (dobj.location == this.location)
+      player:tell(this:remove_msg());
+      if (msg = this:oremove_msg())
+        player.location:announce(player.name, " ", msg);
+      endif
+      player:tell("You can't pick up ", dobj.name, ", so it tumbles onto the floor.");
+    else
+      player:tell(this:remove_fail_msg());
+      if (msg = this:oremove_fail_msg())
+        player.location:announce(player.name, " ", msg);
+      endif
+    endif
+  endif
+endif
+.
+
+@verb #8:"look_self" this none this
+@program #8:look_self
+pass();
+if (!this.dark)
+  this:tell_contents();
+endif
+.
+
+@verb #8:"acceptable" this none this
+@program #8:acceptable
+return !is_player(args[1]);
+.
+
+@verb #8:"open" this none none rxd
+@program #8:open
+perms = (callers() && (caller != this)) ? caller_perms() | player;
+if (this.opened)
+  player:tell("It's already open.");
+  "elseif (this:is_openable_by(player))";
+elseif (this:is_openable_by(perms))
+  this:set_opened(1);
+  player:tell(this:open_msg());
+  if (msg = this:oopen_msg())
+    player.location:announce(player.name, " ", msg);
+  endif
+else
+  player:tell(this:open_fail_msg());
+  if (msg = this:oopen_fail_msg())
+    player.location:announce(player.name, " ", msg);
+  endif
+endif
+.
+
+@verb #8:"@lock_for_open @lock-for-open" this with any
+@program #8:@lock_for_open
+set_task_perms(player);
+key = $lock_utils:parse_keyexp(iobjstr, player);
+if (typeof(key) == STR)
+  player:tell("That key expression is malformed:");
+  player:tell("  ", key);
+else
+  try
+    this.open_key = key;
+    player:tell("Locked opening of ", this.name, " with this key:");
+    player:tell("  ", $lock_utils:unparse_key(key));
+  except error (ANY)
+    player:tell(error[2], ".");
+  endtry
+endif
+.
+
+@verb #8:"is_openable_by" this none this
+@program #8:is_openable_by
+return (this.open_key == 0) || $lock_utils:eval_key(this.open_key, args[1]);
+.
+
+@verb #8:"close" this none none rxd
+@program #8:close
+if (!this.opened)
+  player:tell("It's already closed.");
+else
+  this:set_opened(0);
+  player:tell(this:close_msg());
+  if (msg = this:oclose_msg())
+    player.location:announce(player.name, " ", msg);
+  endif
+endif
+.
+
+@verb #8:"@unlock_for_open @unlock-for-open" this none none
+@program #8:@unlock_for_open
+set_task_perms(player);
+try
+  dobj.open_key = 0;
+  player:tell("Unlocked ", dobj.name, " for opening.");
+except error (ANY)
+  player:tell(error[2], ".");
+endtry
+.
+
+@verb #8:"tell_contents" this none this
+@program #8:tell_contents
+if (this.contents)
+  player:tell("Contents:");
+  for thing in (this:contents())
+    player:tell("  ", thing:title());
+  endfor
+elseif (msg = this:empty_msg())
+  player:tell(msg);
+endif
+.
+
+@verb #8:"set_opened" this none this
+@program #8:set_opened
+if (!$perm_utils:controls(caller.owner, this))
+  return E_PERM;
+else
+  this.opened = opened = !(!args[1]);
+  this.dark = this.opaque > opened;
+  return opened;
+endif
+.
+
+@verb #8:"@opacity" this is any
+@program #8:@opacity
+if (!$perm_utils:controls(player, this))
+  player:tell("Can't set opacity of something you don't own.");
+elseif ((iobjstr != "0") && (!toint(iobjstr)))
+  player:tell("Opacity must be an integer (0, 1, 2).");
+else
+  player:tell("Opacity changed:  Now " + {"transparent.", "opaque.", "a black hole."}[1 + this:set_opaque(toint(iobjstr))]);
+endif
+.
+
+@verb #8:"set_opaque" this none this
+@program #8:set_opaque
+if (!$perm_utils:controls(caller.owner, this))
+  return E_PERM;
+elseif (typeof(number = args[1]) != INT)
+  return E_INVARG;
+else
+  number = (number < 0) ? 0 | ((number > 2) ? 2 | number);
+  this.dark = number > this.opened;
+  return this.opaque = number;
+endif
+.
+
+@verb #8:"oclose_msg close_msg oopen_msg open_msg oput_fail_msg put_fail_msg oremove_fail_msg oremove_msg remove_fail_msg remove_msg oput_msg put_msg oopen_fail_msg open_fail_msg empty_msg" this none this rxd #36
+@program #8:oclose_msg
+return (msg = `this.(verb) ! ANY') ? $string_utils:pronoun_sub(msg) | "";
+.
+
+@verb #8:"dark" this none this
+@program #8:dark
+return this.(verb);
+.
+
+@prop #8."oclose_msg" "closes %d." rc
+@prop #8."close_msg" "You close %d." rc
+@prop #8."oopen_msg" "opens %d." rc
+@prop #8."open_msg" "You open %d." rc
+@prop #8."oput_fail_msg" "" rc
+@prop #8."put_fail_msg" "You can't put %d in that." rc
+@prop #8."opaque" 1 r
+@prop #8."dark" 1 r
+@prop #8."oremove_fail_msg" "" rc
+@prop #8."oremove_msg" "removes %d from %i." rc
+@prop #8."remove_fail_msg" "You can't remove that." rc
+@prop #8."remove_msg" "You remove %d from %i." rc
+@prop #8."oput_msg" "puts %d in %i." rc
+@prop #8."put_msg" "You put %d in %i." rc
+@prop #8."oopen_fail_msg" "" rc
+@prop #8."open_fail_msg" "You can't open that." rc
+@prop #8."empty_msg" "It is empty." rc
+@prop #8."opened" 0 r
+@prop #8."open_key" 0 c
+;;#8.("aliases") = {"generic container"}
+;;#8.("object_size") = {14463, 1669929999}

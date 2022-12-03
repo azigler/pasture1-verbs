@@ -1,0 +1,5 @@
+@create $exit named out:out,o
+;;#160.("source") = #158
+;;#160.("dest") = #62
+;;#160.("aliases") = {"out", "o"}
+;;#160.("object_size") = {0, 0}

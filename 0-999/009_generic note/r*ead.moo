@@ -2,6 +2,8 @@
 
 if (!this:is_readable_by(valid(caller_perms()) ? caller_perms() | player))
   player:tell("Sorry, but it seems to be written in some code that you can't read.");
+elseif (!length(this.text))
+  player:tell("The note is empty.");
 else
   this:look_self();
   player:tell();

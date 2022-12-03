@@ -18,20 +18,30 @@ if (!this.dark && contents != {})
   elseif (ctype == 2)
     player:tell("You see ", $string_utils:title_list(contents), " here.");
   elseif (ctype == 3)
-    players = things = {};
+    integrated = unintegrated = players = {};
+    render_integrated = render_unintegrated = "";
     for x in (contents)
       if (is_player(x))
-        players = {@players, x};
+        players = players:add(x);
       else
-        things = {@things, x};
+        if (respond_to(x, "look_contents_msg") && x:look_contents_msg())
+          integrated = integrated:add(x);
+        else
+          unintegrated = unintegrated:add(x);
+        endif
       endif
+      yin();
     endfor
-    if (things)
-      player:tell("You see ", $string_utils:title_list(things), " here.");
+    if (integrated)
+      for i in (integrated)
+        render_integrated = render_integrated + i:look_contents_msg() + "  ";
+        yin();
+      endfor
+      render_integrated = render_integrated:trim();
     endif
-    if (players)
-      player:tell($string_utils:title_listc(players), length(players) == 1 ? " " + $gender_utils:get_conj("is", players[1]) | " are", " here.");
-    endif
+    render_integrated && player:tell(render_integrated);
+    unintegrated && player:tell("You see ", $string_utils:title_list(unintegrated), " here.");
+    players && player:tell($string_utils:title_listc(players), length(players) == 1 ? " " + $gender_utils:get_conj("is", players[1]) | " are", " here.");
     "ZIG: add exits to room desc -- 12/01/2022";
     if (this.exits == {})
       player:tell("This room has no conventional exits.");
@@ -51,3 +61,4 @@ if (!this.dark && contents != {})
     endif
   endif
 endif
+"Last modified Sat Dec  3 03:29:41 2022 UTC by Saeed (#128).";

@@ -1,0 +1,6 @@
+@create $root_class named Generic Utilities Package:Generic Utilities Package
+@prop #78."help_msg" {} rc
+;;#78.("help_msg") = {"This is the Generic Utility Object.  One presumes it should have text in it explaining the use of the utility object in question."}
+;;#78.("aliases") = {"Generic Utilities Package"}
+;;#78.("description") = "This is a placeholder parent for all the $..._utils packages, to more easily find them and manipulate them. At present this object defines no useful verbs or properties. (Filfre.)"
+;;#78.("object_size") = {835, 1669929999}

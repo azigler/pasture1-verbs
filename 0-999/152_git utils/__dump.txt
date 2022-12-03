@@ -1,0 +1,139 @@
+@create $generic_utils named git utils:git utils
+@verb #152:"save_verb" this none this
+@program #152:save_verb
+if (!caller_perms().wizard)
+  raise(E_PERM);
+endif
+{path, content} = args;
+tokens = $string_utils:explode(path, "/");
+"make folders if needed";
+for token_id in [1..length(tokens) - 1]
+  `file_mkdir($string_utils:from_list(tokens[1..token_id], "/")) ! E_FILE';
+endfor
+handle = file_open(path, "w-tn");
+for line in (content)
+  yin();
+  file_writeline(handle, line);
+endfor
+file_close(handle);
+.
+
+@verb #152:"save_all_verbs" none none none rxd
+@program #152:save_all_verbs
+if (!caller_perms().wizard)
+  raise(E_PERM);
+endif
+max_object = max_object();
+"remove old verb files";
+`file_rename("verbs/0-999/", tostr(".TRASH/", time())) ! ANY => 0';
+`file_rename("verbs/1000-9999/", tostr(".TRASH/", time())) ! ANY => 0';
+`file_rename("verbs/10000-99999/", tostr(".TRASH/", time())) ! ANY => 0';
+`file_rename("verbs/100000-999999/", tostr(".TRASH/", time())) ! ANY => 0';
+"set directory structure";
+if (toint(max_object) < 1000)
+  dir_zeroes = 3;
+  dir_str = "0-999/";
+elseif (toint(max_object) < 10000)
+  dir_zeroes = 4;
+  dir_str = "1000-9999/";
+elseif (toint(max_object) < 100000)
+  dir_zeroes = 5;
+  dir_str = "10000-99999/";
+elseif (toint(max_object) < 1000000)
+  dir_zeroes = 6;
+  dir_str = "100000-999999/";
+endif
+for object in [#0..max_object]
+  yin();
+  if (valid(object))
+    "create padding for folder name";
+    obj_num_str = tostr(object)[2..$];
+    while (length(obj_num_str) < dir_zeroes)
+      obj_num_str = "0" + obj_num_str;
+    endwhile
+    for vname in (verbs(object))
+      yin();
+      try
+        vinfo = verb_info(object, vname);
+        vargs = verb_args(object, vname);
+        vfullname = vinfo[3];
+        if (index(vfullname, " "))
+          vfullname = toliteral(vfullname);
+        endif
+        if (index(vargs[2], "/"))
+          vargs[2] = tostr("(", vargs[2], ")");
+        endif
+        "determine name of file";
+        filename = tostr("verbs/", dir_str, obj_num_str, ("_" + object.name) + "/", vname, ".moo");
+        "use same format as $prog:@list";
+        vheader = tostr(object, ":", vfullname, "   ", $string_utils:from_list(vargs, " "), " ", vinfo[2]);
+        if (!length(vcode = verb_code(object, vname)))
+          vcode = {"(That verb has not been programmed.)"};
+        endif
+        file_content = {vheader, "", @vcode};
+        $git_utils:save_verb(filename, file_content);
+      except e (ANY)
+        if (e[2] == "File name too long")
+          filename = tostr("verbs/", dir_str, obj_num_str, ("_" + object.name) + "/", $string_utils:words(vname)[1], ".moo");
+          $git_utils:save_verb(filename, file_content);
+        endif
+      endtry
+    endfor
+    if (!is_player(object))
+      dump_name = tostr("verbs/", dir_str, obj_num_str, ("_" + object.name) + "/__dump.txt");
+      $git_utils:save_dump(object, dump_name);
+    endif
+  endif
+endfor
+return player:notify("All verbs successfully saved to files.");
+.
+
+@verb #152:"commit_verbs" any any any rxd
+@program #152:commit_verbs
+if (!caller_perms().wizard)
+  raise(E_PERM);
+endif
+this:save_all_verbs();
+if (!length(args))
+  player:tell("Enter the commit message:");
+  commit_msg = $command_utils:read();
+else
+  commit_msg = $string_utils:from_list(args, " ");
+endif
+author_string = player.name;
+if (player.email_address != "")
+  author_string = ((author_string + " <") + player.email_address) + ">";
+endif
+exec({"commit_verbs.sh", commit_msg, author_string});
+success_string = tostr("Pushed git commit with message: " + commit_msg);
+server_log(success_string);
+return player:tell(success_string);
+.
+
+@verb #152:"save_dump" this none this
+@program #152:save_dump
+if (!caller_perms().wizard)
+  raise(E_PERM);
+endif
+{object, path} = args;
+tokens = $string_utils:explode(path, "/");
+"make folders if needed";
+for token_id in [1..length(tokens) - 1]
+  `file_mkdir($string_utils:from_list(tokens[1..token_id], "/")) ! E_FILE';
+endfor
+handle = file_open(path, "w-tn");
+file_writeline(handle, $code_utils:dump_preamble(object));
+for line in ($code_utils:dump_verbs(object, 1))
+  yin();
+  file_writeline(handle, line);
+endfor
+for line in ($code_utils:dump_properties(object, 1))
+  yin();
+  file_writeline(handle, line);
+endfor
+file_close(handle);
+.
+
+;;#152.("aliases") = {"git utils"}
+;;#152.("description") = "This is a placeholder parent for all the $..._utils packages, to more easily find them and manipulate them. At present this object defines no useful verbs or properties. (Filfre.)"
+;;#152.("object_size") = {4944, 1669967999}

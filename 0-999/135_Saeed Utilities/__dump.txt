@@ -1,0 +1,12 @@
+@create $generic_utils named Saeed Utilities:Saeed Utilities,Saeed,Utilities
+@verb #135:"keep_alive" this none this xd
+@program #135:keep_alive
+for x in (connected_players())
+  ((idle_seconds(x) >= 240) && x.keep_alive) && x:tell("#$#keep_alive");
+  yin();
+endfor
+.
+
+;;#135.("aliases") = {"Saeed Utilities", "Saeed", "Utilities"}
+;;#135.("description") = "This is a placeholder parent for all the $..._utils packages, to more easily find them and manipulate them. At present this object defines no useful verbs or properties. (Filfre.)"
+;;#135.("object_size") = {1133, 1669967999}

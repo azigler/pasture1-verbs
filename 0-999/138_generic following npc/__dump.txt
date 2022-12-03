@@ -1,0 +1,18 @@
+@create $player named generic following npc:generic following npc
+@verb #138:"gesture" this none none rxd
+@program #138:gesture
+if (this.location == player)
+  return player:tell("Might want to let it down.");
+endif
+$you:say_action(this.gesture_msg, player, this);
+if (this.owner != player)
+  $you:say_action("%N ignores %t.", this, player);
+else
+  this:follow((this.following != 0) ? this | player);
+endif
+.
+
+@prop #138."gesture_msg" "%N %<makes> a quick gesture to %t." rc
+;;#138.("aliases") = {"generic following npc"}
+;;#138.("description") = "You see a player who should type '@describe me as ...'."
+;;#138.("object_size") = {2104, 1669967999}

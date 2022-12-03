@@ -1,0 +1,607 @@
+@create $local named Shapes Object Serialization Library
+@verb #75:"_log" this none this xd
+@program #75:_log
+notify(player, tostr(@args));
+.
+
+@verb #75:"_suspend_if_necessary" this none this xd
+@program #75:_suspend_if_necessary
+((ticks_left() < 10000) || (seconds_left() < 2)) && suspend(0);
+.
+
+@verb #75:"_controls controls" this none this x
+@verb #75:"_controls_verb" this none this x
+@program #75:_controls_verb
+{who, what, name} = args;
+return (who == verb_info(what, name)[1]) || who.wizard;
+.
+
+@verb #75:"_controls_property" this none this x
+@program #75:_controls_property
+{who, what, name} = args;
+return (who == property_info(what, name)[1]) || who.wizard;
+.
+
+@verb #75:"objects" this none this xd
+@program #75:objects
+args && raise(E_ARGS);
+set_task_perms(caller_perms());
+r = [];
+r["Objects"] = {};
+return r;
+.
+
+@verb #75:"read_object" this none this xd
+@program #75:read_object
+{o, ?options = []} = args;
+((ticks_left() < 2000) || (seconds_left() < 2)) && suspend(0);
+if (`valid(o) ! E_TYPE')
+  pcount = length(properties(o));
+  vcount = length(verbs(o));
+  set_task_perms(caller_perms());
+  r = ["Attributes" -> []];
+  v = parents(o);
+  m = ["id" -> "parents"];
+  m["status"] = this:_controls(caller_perms(), o) ? "writable" | "readable";
+  r["Attributes"]["parents"] = ["Meta" -> m, "Value" -> ["value" -> v]];
+  if (typeof(o) == OBJ)
+    v = is_player(o);
+    m = ["id" -> "player"];
+    m["status"] = `caller_perms().wizard ! E_INVIND' ? "writable" | "readable";
+    r["Attributes"]["player"] = ["Meta" -> m, "Value" -> ["value" -> v]];
+  endif
+  r["Values"] = [];
+  for a in (this:_values(o))
+    this:_suspend_if_necessary();
+    r["Values"][a] = this:read_value(o, a, options);
+  endfor
+  r["Properties"] = {};
+  for p in [1..pcount]
+    this:_suspend_if_necessary();
+    r["Properties"] = {@r["Properties"], this:read_property(o, p)};
+  endfor
+  r["Verbs"] = {};
+  for v in [1..vcount]
+    this:_suspend_if_necessary();
+    r["Verbs"] = {@r["Verbs"], this:read_verb(o, v)};
+  endfor
+  if (p = o.w || this:_controls(caller_perms(), o))
+    status = "writable";
+  elseif (o.r)
+    status = "readable";
+  else
+    status = "";
+  endif
+  if (typeof(o) == OBJ)
+    r["Meta"] = ["id" -> toint(o), "status" -> status];
+  else
+    r["Meta"] = ["status" -> status];
+  endif
+  return r;
+else
+  if (typeof(o) == OBJ)
+    r = ["Meta" -> ["id" -> toint(o), "status" -> "invalid"]];
+  else
+    r = ["Meta" -> ["status" -> "invalid"]];
+  endif
+  return r;
+endif
+.
+
+@verb #75:"write_object" this none this xd
+@program #75:write_object
+{o, r, ?options = []} = args;
+((ticks_left() < 2000) || (seconds_left() < 2)) && suspend(0);
+if (`valid(o) ! E_TYPE')
+  properties = properties(o);
+  verbs = verbs(o);
+  set_task_perms(caller_perms());
+  try
+    r["Attributes"];
+    r["Values"];
+    r["Properties"];
+    r["Verbs"];
+    errors = 0;
+    parents = `r["Attributes"]["parents"]["Value"]["value"] ! E_RANGE => parents(o)';
+    if (parents(o) != parents)
+      x = this:_write_parents(o, ["Value" -> ["value" -> {}]]);
+      errors = errors + ("Error" in mapkeys(x));
+    endif
+    location = `r["Values"]["location"]["Value"]["value"] ! E_RANGE => o.location';
+    if (o.location != location)
+      x = this:write_value(o, "location", ["Value" -> ["value" -> $nothing]]);
+      errors = errors + ("Error" in mapkeys(x));
+    endif
+    owner = `r["Values"]["owner"]["Value"]["value"] ! E_RANGE => o.owner';
+    if ("owner" in mapkeys(r["Values"]))
+      r["Values"]["owner"] = this:write_value(o, "owner", r["Values"]["owner"]);
+      errors = errors + ("Error" in mapkeys(r["Values"]["owner"]));
+    endif
+    if ("parents" in mapkeys(r["Attributes"]))
+      r["Attributes"]["parents"] = this:_write_parents(o, r["Attributes"]["parents"]);
+      errors = errors + ("Error" in mapkeys(r["Attributes"]["parents"]));
+    endif
+    if ("player" in mapkeys(r["Attributes"]))
+      r["Attributes"]["player"] = this:_write_player(o, r["Attributes"]["player"]);
+      errors = errors + ("Error" in mapkeys(r["Attributes"]["player"]));
+    endif
+    if ("location" in mapkeys(r["Values"]))
+      r["Values"]["location"] = this:write_value(o, "location", r["Values"]["location"]);
+      errors = errors + ("Error" in mapkeys(r["Values"]["location"]));
+    endif
+    if ((lp1 = length(properties)) < (lp2 = length(r["Properties"])))
+      for p in [lp1 + 1..lp2]
+        this:_suspend_if_necessary();
+        `add_property(o, tostr("___", p, "___"), 0, {owner, ""}) ! E_PERM';
+      endfor
+    else
+      for p in [lp2 + 1..lp1]
+        this:_suspend_if_necessary();
+        delete_property(o, properties[p]);
+      endfor
+    endif
+    if ((lv1 = length(verbs)) < (lv2 = length(r["Verbs"])))
+      for v in [lv1 + 1..lv2]
+        this:_suspend_if_necessary();
+        `add_verb(o, {owner, "", tostr("___", v, "___")}, {"this", "none", "this"}) ! E_PERM';
+      endfor
+    else
+      for v in [lv2 + 1..lv1]
+        this:_suspend_if_necessary();
+        delete_verb(o, lv2 + 1);
+      endfor
+    endif
+    for p in [1..length(r["Properties"])]
+      this:_suspend_if_necessary();
+      r["Properties"][p] = this:write_property(o, p, r["Properties"][p]);
+      if ("Error" in mapkeys(r["Properties"][p]))
+        if ((lp1 < lp2) && (r["Properties"][p]["Error"]["diagnostic"] == "property is invalid"))
+          r["Properties"][p]["Error"]["diagnostic"] = "permission denied";
+        endif
+        errors = errors + 1;
+      endif
+    endfor
+    for v in [1..length(r["Verbs"])]
+      this:_suspend_if_necessary();
+      r["Verbs"][v] = this:write_verb(o, v, r["Verbs"][v], `options["verbs"] ! E_RANGE => []');
+      if ("Error" in mapkeys(r["Verbs"][v]))
+        if ((lv1 < lv2) && (r["Verbs"][v]["Error"]["diagnostic"] == "verb is invalid"))
+          r["Verbs"][v]["Error"]["diagnostic"] = "permission denied";
+        endif
+        errors = errors + 1;
+      endif
+    endfor
+    values = setremove(setremove(mapkeys(r["Values"]), "location"), "owner");
+    for a in (values)
+      this:_suspend_if_necessary();
+      r["Values"][a] = this:write_value(o, a, r["Values"][a], options);
+      errors = errors + ("Error" in mapkeys(r["Values"][a]));
+    endfor
+    if (errors < 1)
+      r = this:read_object(o);
+    else
+      r["Meta"] = ["id" -> toint(o), "status" -> "unknown"];
+      r["Error"] = ["diagnostic" -> "errors in sub-operations"];
+    endif
+    return r;
+  except (E_RANGE, E_TYPE)
+    r["Error"] = ["diagnostic" -> "bad message format"];
+    return r;
+  except (E_PERM)
+    r["Error"] = ["diagnostic" -> "permission denied"];
+    return r;
+  endtry
+else
+  r["Error"] = ["diagnostic" -> "object reference is invalid"];
+  return r;
+endif
+.
+
+@verb #75:"_parent_property_info" this none this xd
+@program #75:_parent_property_info
+{object, property} = args;
+for parent in (parents(object))
+  this:_suspend_if_necessary();
+  if (ret = `property_info(parent, property) ! E_PROPNF')
+    return ret;
+  endif
+endfor
+return {};
+.
+
+@verb #75:"_values" this none this xd
+@program #75:_values
+{o} = args;
+x = {};
+for t in ({o, @ancestors(o)})
+  this:_suspend_if_necessary();
+  y = {};
+  for z in (properties(t))
+    this:_suspend_if_necessary();
+    y = {z, @y};
+  endfor
+  x = {@y, @x};
+endfor
+x = {"name", "owner", "location", "programmer", "wizard", "r", "w", "f", "a", @x};
+return x;
+.
+
+@verb #75:"values" this none this xd
+@program #75:values
+{o} = args;
+set_task_perms(caller_perms());
+r = ["Values" -> {}];
+for value in (this:_values(o))
+  this:_suspend_if_necessary();
+  r["Values"] = {@r["Values"], this:read_value(o, value)};
+endfor
+return r;
+.
+
+@verb #75:"read_value" this none this xd
+@program #75:read_value
+{o, a, ?options = []} = args;
+strip_clear_values = `options["strip_clear_values"] ! E_RANGE';
+set_task_perms(caller_perms());
+try
+  if (a == "location")
+    v = o.location;
+    p = this:_controls(caller_perms(), o) ? "rw" | "r";
+  elseif (a in {"owner", "programmer", "wizard"})
+    v = o.(a);
+    p = `caller_perms().wizard ! E_INVIND' ? "rw" | "r";
+  elseif (a in {"r", "w", "f", "a"})
+    v = o.(a);
+    p = this:_controls(caller_perms(), o) ? "rw" | "r";
+  elseif (a in {"name"})
+    v = o.(a);
+    p = (`caller_perms().wizard ! E_INVIND' || (this:_controls(caller_perms(), o) && (!is_player(o)))) ? "rw" | "r";
+  else
+    v = o.(a);
+    pi = property_info(o, a);
+    p = (index(pi[2], "w") || this:_controls_property(caller_perms(), o, a)) ? "rw" | "r";
+    c = is_clear_property(o, a);
+  endif
+except (E_INVIND, E_PROPNF)
+  r = ["Meta" -> ["id" -> a, "status" -> "invalid"]];
+  return r;
+except (E_PERM)
+  r = ["Meta" -> ["id" -> a, "status" -> "denied"]];
+  return r;
+endtry
+m = ["id" -> a];
+m["status"] = index(p, "w") ? "writable" | "readable";
+r = ["Meta" -> m, "Value" -> ["value" -> v]];
+if (`r["Value"]["clear"] = c ! E_VARNF' && strip_clear_values)
+  r["Value"] = mapdelete(r["Value"], "value");
+endif
+if (`pi ! E_VARNF')
+  if ((ppi = this:_parent_property_info(o, a)) && (ppi != pi))
+    r["Value"]["owner"] = pi[1];
+    r["Value"]["perms"] = pi[2];
+  endif
+endif
+return r;
+.
+
+@verb #75:"write_value" this none this xd
+@program #75:write_value
+{o, a, r, ?options = []} = args;
+set_task_perms(caller_perms());
+mk = mapkeys(r);
+if ((!("Meta" in mk)) && (!("Value" in mk)))
+  r["Error"] = ["diagnostic" -> "bad message format"];
+  return r;
+endif
+old = this:read_value(o, a, options);
+if (`old["Value"] ! E_RANGE' == `r["Value"] ! E_RANGE')
+  return old;
+endif
+try
+  mk = mapkeys(r["Value"]);
+  if (a in {"name", "owner", "location", "programmer", "wizard", "r", "w", "f", "a"})
+    if ("clear" in mk)
+      r["Error"] = ["diagnostic" -> "clear is not applicable"];
+      return r;
+    endif
+    if ("owner" in mk)
+      r["Error"] = ["diagnostic" -> "owner is not applicable"];
+      return r;
+    endif
+    if ("perms" in mk)
+      r["Error"] = ["diagnostic" -> "perms is not applicable"];
+      return r;
+    endif
+  endif
+  c = `r["Value"]["clear"] ! E_RANGE';
+  if (c)
+    clear_property(o, a);
+  else
+    v = r["Value"]["value"];
+    if (a == "location")
+      (o.location != v) && move(o, v);
+    else
+      o.(a) = v;
+    endif
+  endif
+  if (("owner" in mk) || ("perms" in mk))
+    set_property_info(o, a, {`r["Value"]["owner"] ! E_RANGE => caller_perms()', r["Value"]["perms"]});
+  endif
+except (E_RANGE)
+  r["Error"] = ["diagnostic" -> "bad message format"];
+  return r;
+except (E_INVIND)
+  r["Error"] = ["diagnostic" -> "object reference is invalid"];
+  return r;
+except (E_PROPNF)
+  r["Error"] = ["diagnostic" -> "value is invalid"];
+  return r;
+except (E_PERM)
+  r["Error"] = ["diagnostic" -> "permission denied"];
+  return r;
+except (E_TYPE)
+  r["Error"] = ["diagnostic" -> "data type is invalid"];
+  return r;
+except (E_NACC)
+  r["Error"] = ["diagnostic" -> "move refused by destination"];
+  return r;
+except (E_RECMOVE)
+  r["Error"] = ["diagnostic" -> "recursive move"];
+  return r;
+endtry
+return this:read_value(o, a, options);
+.
+
+@verb #75:"_write_parents" this none this xd
+@program #75:_write_parents
+{o, r} = args;
+set_task_perms(caller_perms());
+try
+  v = r["Value"]["value"];
+  (parents(o) != v) && chparents(o, v);
+except (E_RANGE)
+  r["Error"] = ["diagnostic" -> "bad message format"];
+  return r;
+except (E_INVARG)
+  r["Error"] = ["diagnostic" -> "argument is invalid"];
+  return r;
+except (E_TYPE)
+  r["Error"] = ["diagnostic" -> "data type is invalid"];
+  return r;
+except (E_PERM)
+  r["Error"] = ["diagnostic" -> "permission denied"];
+  return r;
+endtry
+v = parents(o);
+m = ["id" -> "parents"];
+m["status"] = this:_controls(caller_perms(), o) ? "writable" | "readable";
+return ["Meta" -> m, "Value" -> ["value" -> v]];
+.
+
+@verb #75:"_write_player" this none this xd
+@program #75:_write_player
+{o, r} = args;
+set_task_perms(caller_perms());
+try
+  v = r["Value"]["value"];
+  (is_player(o) != v) && set_player_flag(o, v);
+except (E_RANGE)
+  r["Error"] = ["diagnostic" -> "bad message format"];
+  return r;
+except (E_INVARG)
+  r["Error"] = ["diagnostic" -> "argument is invalid"];
+  return r;
+except (E_TYPE)
+  r["Error"] = ["diagnostic" -> "data type is invalid"];
+  return r;
+except (E_PERM)
+  r["Error"] = ["diagnostic" -> "permission denied"];
+  return r;
+endtry
+v = is_player(o);
+m = ["id" -> "player"];
+m["status"] = `caller_perms().wizard ! E_INVIND' ? "writable" | "readable";
+return ["Meta" -> m, "Value" -> ["value" -> v]];
+.
+
+@verb #75:"read_verb" this none this xd
+@program #75:read_verb
+{o, v} = args;
+try
+  vx = verbs(o);
+except (E_TYPE, E_INVARG)
+  r = ["Meta" -> ["id" -> o, "status" -> "invalid"]];
+  return r;
+endtry
+try
+  vn = vx[v];
+except (E_TYPE, E_RANGE)
+  r = ["Meta" -> ["id" -> v, "status" -> "invalid"]];
+  return r;
+endtry
+set_task_perms(caller_perms());
+try
+  vi = verb_info(o, v);
+  va = verb_args(o, v);
+  vc = verb_code(o, v);
+  p = (index(vi[2], "w") || this:_controls_verb(caller_perms(), o, v)) ? "rw" | "r";
+except (E_TYPE, E_INVARG, E_VERBNF)
+  r = ["Meta" -> ["id" -> v, "status" -> "invalid"]];
+  return r;
+except (E_PERM)
+  r = ["Meta" -> ["id" -> v, "status" -> "denied"]];
+  return r;
+endtry
+m = ["id" -> v];
+m["status"] = index(p, "w") ? "writable" | "readable";
+r = ["Meta" -> m, "Verb" -> ["owner" -> vi[1], "perms" -> vi[2], "names" -> vi[3], "dobj" -> va[1], "prep" -> va[2], "iobj" -> va[3], "code" -> vc]];
+return r;
+.
+
+@verb #75:"write_verb" this none this xd
+@program #75:write_verb
+{o, v, r, ?options = []} = args;
+error1 = error2 = 0;
+try
+  vx = verbs(o);
+except (E_TYPE, E_INVARG)
+  error1 = 1;
+endtry
+try
+  vn = vx[v];
+except (E_VARNF)
+except (E_TYPE, E_RANGE)
+  error2 = 1;
+endtry
+set_task_perms(caller_perms());
+old = this:read_verb(o, v);
+if (`old["Verb"] ! E_RANGE' == `r["Verb"] ! E_RANGE')
+  return old;
+endif
+if (error1)
+  r["Error"] = ["diagnostic" -> "object reference is invalid"];
+  return r;
+elseif (error2)
+  r["Error"] = ["diagnostic" -> "verb is invalid"];
+  return r;
+endif
+try
+  r1 = r["Verb"];
+  set_verb_info(o, v, {`r1["owner"] ! E_RANGE => caller_perms()', r1["perms"], r1["names"]});
+  set_verb_args(o, v, {r1["dobj"], r1["prep"], r1["iobj"]});
+  vc = `r1["code"] ! E_RANGE => {}';
+  if (vc != E_RANGE)
+    if (set_verb_code(o, v, vc))
+      r["Error"] = ["diagnostic" -> "compilation errors"];
+      return r;
+    endif
+  endif
+except (E_RANGE)
+  r["Error"] = ["diagnostic" -> "bad message format"];
+  return r;
+except (E_INVIND, E_INVARG)
+  r["Error"] = ["diagnostic" -> "object reference is invalid"];
+  return r;
+except (E_PERM)
+  r["Error"] = ["diagnostic" -> "permission denied"];
+  return r;
+except (E_TYPE)
+  r["Error"] = ["diagnostic" -> "data type is invalid"];
+  return r;
+endtry
+return this:read_verb(o, v);
+.
+
+@verb #75:"read_property" this none this xd
+@program #75:read_property
+{o, p, ?options = []} = args;
+try
+  px = properties(o);
+except (E_TYPE, E_INVARG)
+  r = ["Meta" -> ["id" -> o, "status" -> "invalid"]];
+  return r;
+endtry
+try
+  pn = px[p];
+except (E_TYPE, E_RANGE)
+  r = ["Meta" -> ["id" -> p, "status" -> "invalid"]];
+  return r;
+endtry
+set_task_perms(caller_perms());
+try
+  pi = property_info(o, pn);
+  pv = o.(pn);
+  s = (index(pi[2], "w") || this:_controls_property(caller_perms(), o, pn)) ? "rw" | "r";
+except (E_TYPE, E_INVARG, E_PROPNF)
+  r = ["Meta" -> ["id" -> p, "status" -> "invalid"]];
+  return r;
+except (E_PERM)
+  r = ["Meta" -> ["id" -> p, "status" -> "denied"]];
+  return r;
+endtry
+m = ["id" -> p];
+m["status"] = index(s, "w") ? "writable" | "readable";
+r = ["Meta" -> m, "Property" -> ["owner" -> pi[1], "perms" -> pi[2], "name" -> pn, "value" -> pv]];
+return r;
+.
+
+@verb #75:"write_property" this none this xd
+@program #75:write_property
+{o, p, r, ?options = []} = args;
+error1 = error2 = 0;
+try
+  px = properties(o);
+except (E_TYPE, E_INVARG)
+  error1 = 1;
+endtry
+try
+  pn = px[p];
+except (E_VARNF)
+except (E_TYPE, E_RANGE)
+  error2 = 1;
+endtry
+set_task_perms(caller_perms());
+old = this:read_property(o, p);
+if (`old["Property"] ! E_RANGE' == `r["Property"] ! E_RANGE')
+  return old;
+endif
+if (error1)
+  r["Error"] = ["diagnostic" -> "object reference is invalid"];
+  return r;
+elseif (error2)
+  r["Error"] = ["diagnostic" -> "property is invalid"];
+  return r;
+endif
+try
+  r1 = r["Property"];
+  set_property_info(o, pn, {`r1["owner"] ! E_RANGE => caller_perms()', r1["perms"], r1["name"]});
+  o.(r1["name"]) = r1["value"];
+except (E_RANGE)
+  r["Error"] = ["diagnostic" -> "bad message format"];
+  return r;
+except (E_INVIND, E_INVARG)
+  r["Error"] = ["diagnostic" -> "object reference is invalid"];
+  return r;
+except (E_PERM)
+  r["Error"] = ["diagnostic" -> "permission denied"];
+  return r;
+except (E_TYPE)
+  r["Error"] = ["diagnostic" -> "data type is invalid"];
+  return r;
+endtry
+return this:read_property(o, p);
+.
+
+@verb #75:"bare_object" this none this xd
+@program #75:bare_object
+{?parents = {}} = args;
+o = ["Attributes" -> [], "Values" -> [], "Properties" -> {}, "Verbs" -> {}];
+if (parents)
+  o["Attributes"]["parents"] = ["Value" -> ["value" -> parents]];
+endif
+return o;
+.
+
+@verb #75:"add_value" this none this xd
+@program #75:add_value
+{t, n, v} = args;
+t["Values"][n] = ["Value" -> ["value" -> v]];
+return t;
+.
+
+@verb #75:"add_property_definition" this none this xd
+@program #75:add_property_definition
+{t, pn, pv, pi} = args;
+p = ["Property" -> ["owner" -> pi[1], "perms" -> pi[2], "name" -> pn, "value" -> pv]];
+t["Properties"] = {@t["Properties"], p};
+return t;
+.
+
+@verb #75:"add_verb_definition" this none this xd
+@program #75:add_verb_definition
+{t, vi, va, ?vc = {}} = args;
+v = ["Verb" -> ["owner" -> vi[1], "perms" -> vi[2], "names" -> vi[3], "dobj" -> va[1], "prep" -> va[2], "iobj" -> va[3], "code" -> vc]];
+t["Verbs"] = {@t["Verbs"], v};
+return t;
+.
+

@@ -1,0 +1,89 @@
+@create $generic_options named Builder Options:Builder Options
+@verb #77:"check_create_flags" this none this
+@program #77:check_create_flags
+value = args[1];
+if (m = match(value, "[^rwf]"))
+  return tostr("Unknown object flag:  ", value[m[1]]);
+else
+  return {tostr(index(value, "r") ? "r" | "", index(value, "w") ? "w" | "", index(value, "f") ? "f" | "")};
+endif
+.
+
+@verb #77:"show_create_flags" this none this
+@program #77:show_create_flags
+if (value = this:get(@args))
+  return {value, {tostr("Object flags for @create:  ", value)}};
+else
+  return {0, {tostr("@create leaves all object flags reset")}};
+endif
+.
+
+@verb #77:"parse_create_flags" this none this
+@program #77:parse_create_flags
+raw = args[2];
+if (raw == 1)
+  "...+create_flags => create_flags=r";
+  return {args[1], "r"};
+elseif (typeof(raw) == STR)
+  return args[1..2];
+elseif (typeof(raw) != LIST)
+  return "???";
+elseif (length(raw) > 1)
+  return tostr("I don't understand \"", $string_utils:from_list(listdelete(raw, 1), " "), "\"");
+else
+  return {args[1], raw[1]};
+endif
+.
+
+@verb #77:"show_dig_room show_dig_exit" this none this
+@program #77:show_dig_room
+name = args[2];
+what = (verb == "show_dig_room") ? "room" | "exit";
+if ((value = this:get(args[1], name)) == 0)
+  return {0, {tostr("@dig ", what, "s are children of $", what, ".")}};
+else
+  return {value, {tostr("@dig ", what, "s are children of ", value, " (", valid(value) ? value.name | "invalid", ").")}};
+endif
+.
+
+@verb #77:"parse_dig_room parse_dig_exit" this none this
+@program #77:parse_dig_room
+{oname, raw, data} = args;
+if (typeof(raw) == LIST)
+  if (length(raw) > 1)
+    return tostr("I don't understand \"", $string_utils:from_list(listdelete(raw, 1), " "), "\".");
+  endif
+  raw = raw[1];
+endif
+if (typeof(raw) != STR)
+  return "You need to give an object id.";
+elseif ($command_utils:object_match_failed(value = player:my_match_object(raw), raw))
+  return "Option unchanged.";
+endif
+what = (verb == "parse_dig_room") ? "room" | "exit";
+generic = #0.(what);
+if (value == generic)
+  return {oname, 0};
+else
+  if (!$object_utils:isa(value, generic))
+    player:tell("Warning: ", value, " is not a descendant of $", what, ".");
+  endif
+  return {oname, value};
+endif
+.
+
+@prop #77."show_bi_create" {} rc
+;;#77.("show_bi_create") = {"@create/@recycle re-use object numbers.", "@create/@recycle call create()/recycle() directly."}
+@prop #77."type_dig_room" {} rc
+;;#77.("type_dig_room") = {1}
+@prop #77."type_dig_exit" {} rc
+;;#77.("type_dig_exit") = {1}
+@prop #77."show_audit_bytes" {} r #2
+;;#77.("show_audit_bytes") = {"@audit/@prospectus shows `<1K'", "@audit/@prospectus shows bytes"}
+@prop #77."show_audit_float" {} r #2
+;;#77.("show_audit_float") = {"@audit/@prospectus shows integer sizes (1K)", "@audit/@prospectus shows floating-point sizes (1.0K)"}
+;;#77.("names") = {"dig_room", "dig_exit", "create_flags", "bi_create", "audit_bytes", "audit_float"}
+;;#77.("_namelist") = "!dig_room!dig_exit!create_flags!bi_create!audit_bytes!audit_float!"
+;;#77.("aliases") = {"Builder Options"}
+;;#77.("description") = {"Option package for $builder commands.  See `help @build-options'."}
+;;#77.("object_size") = {6109, 1641541193}

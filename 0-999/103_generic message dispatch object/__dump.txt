@@ -1,0 +1,74 @@
+@create $root_class named generic message dispatch object:generic message dispatch object,dispatch
+@verb #103:"parse_send_args" this none this
+@program #103:parse_send_args
+"Usage:  :parse_send_args(msg, @posargs, @keywordargs)";
+"";
+"Transform a given message's arguments (mostly given positionally) into the correct form for MCP.  The cord type has an ordered list of argument keywords for all valid messages; these are matched with the arguments provided to produce an alist.  If more arguments are provided than keywords are available, then the remaining arguments should be {keyword, value} pairs.  This allows the passing of optional arguments and such.";
+"";
+"This verb returns an alist suitable for use with :client_notify().";
+"";
+"Examples:";
+"  .messages_out = {{\"edit\", {\"name\", \"text\"}}}";
+"  :parse_send_args(\"edit\", \"#123.foo\", {\"This is the first line.\"})";
+"    => {{\"name\", \"#123.foo\"}, {\"text\", {\"This is the first line.\"}}}";
+"  :parse_send_args(\"edit\", \"#123:foo\", {\"Hi!\"}, {\"type\", \"MOO-Code\"})";
+"    => {{\"name\", \"#123.foo\"}, {\"text\", {\"Hi!\"}}, {\"type\", \"MOO-Code\"}}";
+{msg, @rest} = args;
+a = $list_utils:assoc(msg, this.messages_out);
+if (!a)
+  raise(E_INVARG, "Invalid message");
+endif
+keywords = a[2];
+lkeywords = length(keywords);
+lrest = length(rest);
+if (lrest < lkeywords)
+  raise(E_ARGS, "Incorrect number of message arguments");
+endif
+return {@$list_utils:make_alist({keywords, rest[1..lkeywords]}), @rest[lkeywords + 1..$]};
+.
+
+@verb #103:"parse_receive_args" this none this
+@program #103:parse_receive_args
+"Usage:  :parse_receive_args(msg, alist)";
+"";
+"Transform a messages arguments from an alist into a mostly-positional list.  The cord type has an ordered list of argument keywords for all valid messages; these are used to construct an ordered list of the items from the alist that correspond to those keywords.  If there are items in the alist that do not match a known keyword, they will be appended to the positional list with keywords attached.";
+"";
+"Examples:";
+"  .messages_in = {{\"edit\", {\"name\", \"text\"}}}";
+"  :parse_receive_args({{\"name\", \"#123.foo\"}, {\"text\", {\"Hi!\"}}})";
+"    => {\"#123.foo\", \"Hi!\"}";
+"  :parse_receive_args({{\"name\", \"#123.foo\"}, {\"text\", {\"Hi!\"}}, {\"type\", \"MOO-Code\"}})";
+"    => {\"#123.foo\", \"Hi!\", {\"type\", \"MOO-Code\"}};";
+{msg, alist} = args;
+a = $list_utils:assoc(msg, this.messages_in);
+if (!a)
+  "this should be caught upstream.";
+  raise(E_INVARG, "Invalid cord message");
+endif
+ret = {};
+for keyword in (a[2])
+  i = $list_utils:iassoc(keyword, alist);
+  if (!i)
+    "this too should be caught.";
+    raise(E_INVARG, "Missing argument in cord message");
+  endif
+  ret = {@ret, alist[i][2]};
+  alist = listdelete(alist, i);
+endfor
+return {@ret, @alist};
+.
+
+@verb #103:"set_messages_in set_messages_out" this none this
+@program #103:set_messages_in
+"This is the standard :set_foo verb.  It allows the property to be set if called by this or called with adequate permissions (this's owner or wizardly).";
+if ((caller == this) || $perm_utils:controls(caller_perms(), this))
+  return this.(verb[5..length(verb)]) = args[1];
+else
+  return E_PERM;
+endif
+.
+
+@prop #103."messages_in" {} r
+@prop #103."messages_out" {} r
+;;#103.("aliases") = {"generic message dispatch object", "dispatch"}
+;;#103.("object_size") = {5312, 1669929999}

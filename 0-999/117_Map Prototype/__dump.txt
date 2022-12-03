@@ -1,0 +1,41 @@
+@create $proto named Map Prototype
+@verb #117:"keys values delete" this none this
+@program #117:keys
+return call_function("map" + verb, this, @args);
+.
+
+@verb #117:"merge" this none this
+@program #117:merge
+"Merges the map with <args>";
+for v, k in (args[1])
+  this[k] = v;
+endfor
+return this;
+.
+
+@verb #117:"generate_json json" this none this
+@program #117:generate_json
+"Map:generate_json()";
+"Map:json()";
+"So that programmers can call generate_json directly on a map.";
+"Just calls the builtin of the same name.";
+return call_function("generate_json", this, @args);
+.
+
+@verb #117:"*" this none this
+@program #117:*
+"This catches everything else that doesn't have a specific function.";
+set_task_perms(caller_perms());
+"don't respond to calls from built-ins";
+{_, name, programmer, location, _} = callers()[1];
+if ((name && (programmer == $nothing)) && (location == $nothing))
+  return;
+endif
+"Frobs, originally conceptualized by Todd Sundsted for Improvise.";
+if (this && (`prototype = this[$map_proto.frob_key_name] ! E_RANGE' in $frobs))
+  return prototype:(verb)(@args);
+endif
+return pass(@args);
+.
+
+@prop #117."frob_key_name" "__prototype__" rc

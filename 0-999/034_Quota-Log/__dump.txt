@@ -1,0 +1,21 @@
+@create $mail_recipient named Quota-Log:Quota-Log,Quota_Log,QL,Quota
+@verb #34:"init_for_core" this none this
+@program #34:init_for_core
+if (caller_perms().wizard)
+  pass(@args);
+  this.mail_notify = {player};
+  player:set_current_message(this, 0, 0, 1);
+  this.moderated = 1;
+else
+  raise(E_PERM);
+endif
+.
+
+;;#34.("messages_going") = {{0, {{1, {1541028153, "Wizard (#2)", "*Quota-Log (#34)", "@quota Anti-Wizard (#98) 1000000 (from 20000)", "", "Reason for quota increase: (none)."}}}}}
+;;#34.("moderated") = 1
+;;#34.("mail_notify") = {#2}
+;;#34.("mail_forward") = {}
+;;#34.("last_used_time") = 1541028153
+;;#34.("aliases") = {"Quota-Log", "Quota_Log", "QL", "Quota"}
+;;#34.("description") = "Record of whose quota has been messed with and why."
+;;#34.("object_size") = {2326, 1669929999}

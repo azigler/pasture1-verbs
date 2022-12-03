@@ -1,0 +1,725 @@
+@create $generic_utils named Conversion Utils:Conversion Utils
+@verb #93:"dd_to_dms dh_to_hms" this none this
+@program #93:dd_to_dms
+":dd_to_dms(INT|FLOAT <degrees>) => LIST {INT <degrees>, INT <minutes>, FLOAT <seconds>}";
+"This verb converts decimal degrees to degrees, minutes, and seconds.";
+dd = tofloat(args[1]);
+s = (((dd - tofloat(d = toint(dd))) * 60.0) - tofloat(m = toint((dd - tofloat(d)) * 60.0))) * 60.0;
+return {d, m, s};
+.
+
+@verb #93:"dms_to_dd hms_to_dh" this none this
+@program #93:dms_to_dd
+":dms_to_dd(INT|FLOAT <deg>, INT|FLOAT <min>, INT|FLOAT <sec>) => FLOAT <deg>";
+"This verb converts degrees/minutes/seconds to decimal degrees.";
+{d, m, s} = args[1..3];
+d = tofloat(d);
+m = tofloat(m);
+s = tofloat(s);
+return (d + (m / 60.0)) + (s / 3600.0);
+.
+
+@verb #93:"rect_to_polar" this none this
+@program #93:rect_to_polar
+":rect_to_polar(INT|FLOAT <x>, INT|FLOAT <y>) => FLOAT <radius>, FLOAT <angle>.";
+"This verb converts from rectangular (x,y) coordinates to polar (r, theta) coordinates.";
+{x, y} = args[1..2];
+x = tofloat(x);
+y = tofloat(y);
+return {sqrt((x * x) + (x * x)), `atan(y, x) ! E_INVARG => 0.0'};
+.
+
+@verb #93:"polar_to_rect" this none this
+@program #93:polar_to_rect
+":polar_to_rect(INT|FLOAT <radius>, INT|FLOAT <angle>) => FLOAT <x>, FLOAT <y>";
+"This verb converts from polar (radius, angle) coordinates to rectangulat (x,y) coordinates.";
+{r, a} = args[1..2];
+r = tofloat(r);
+a = tofloat(a);
+return {(r = r / (1.0 + (z2 = (z = tan(a / 2.0)) * z))) * (1.0 - z2), (r * 2.0) * z};
+.
+
+@verb #93:"F_to_C degF_to_degC" this none this
+@program #93:F_to_C
+":F_to_C(INT|FLOAT <Fahrenheit>) => FLOAT <Celsius>";
+"This verb converts Fahrenheit degrees to Celsius degrees.";
+return (tofloat(args[1]) - 32.0) / 1.8;
+.
+
+@verb #93:"C_to_F degC_to_degF" this none this
+@program #93:C_to_F
+":C_to_F(INT|FLOAT <Celsius>) => FLOAT <Fahrenheit>";
+"This verb converts Celsius degrees to Fahrenheit degrees.";
+return (tofloat(args[1]) * 1.8) + 32.0;
+.
+
+@verb #93:"convert" this none this
+@program #93:convert
+":convert(STR <units>, STR <units>) => FLOAT conversion factor | LIST errors.";
+"This verb attempts to compute the conversion factor between two sets of units. If the two inputs are of the same type (two speeds, two lengths, etc.), the value is returned. If the two inputs are not of the same type, a LIST is returned as follows: {1, {FLOAT <value>, STR <units>}. {FLOAT <value>, STR <units>}}. The 1 indicates that the two inputs were correctly formed. <value> is the conversion factor of the input into the basic <units>. This error output is useful for determining the basic structure and value of an unknown unit of measure. If either of the inputs can not be broken down to known units, a LIST is returned as follows: {0, STR <bad input>}.";
+"";
+"The format of the input strings is fairly straight forward: any multiplicative combination of units, ending in an optional digit to represent that unit is raised to a power, the whole of which is preceeded by an initial value. Examples: \"100 kg m/sec2\", \"35 joules\", \"2000 furlongs/fortnight\"";
+"";
+"Some example uses:";
+";$convert_utils:convert(\"2000 furlongs/fortnight\", \"mph\")";
+"=> 0.744047619047619";
+";$convert_utils:convert(\"kilowatt hours\", \"joules\")";
+"=> 3600000.0";
+"";
+";$convert_utils:convert(\"furlongs\", \"mph\")";
+"=> {1, {201.168, \"m\"}, {044704, \"m / s\"}}";
+"";
+";$convert_utils:convert(\"junk\", \"meters\")";
+"=> {0, \"junk\"}";
+{havestr, wantstr} = args;
+{havenum, havestr} = $string_utils:first_word(havestr);
+havestr = $string_utils:trimr(tostr(havenum, " ", strsub(havestr, " ", "")));
+wantstr = strsub(wantstr, " ", "");
+"Preceeding three lines added by GD (#110777) on 23-June-2007 to stop an annoying error when you try to convert to/from things like 'fluid ounces'.";
+have = this:_do_convert(havestr);
+want = this:_do_convert(wantstr);
+if ((have && want) && (have[2] == want[2]))
+  return have[1] / want[1];
+elseif (have && want)
+  return {1, {have[1], this:_format_units(@have[2])}, {want[1], this:_format_units(@want[2])}};
+else
+  return {0, have ? wantstr | havestr};
+endif
+.
+
+@verb #93:"_do_convert" this none this
+@program #93:_do_convert
+"THIS VERB IS NOT INTENDED FOR USER USAGE.";
+":_do_convert is the workhorse of $convert_utils:convert and is based loosely upon the 'units' Perl script the ships with BSD Unix.";
+"Essentially, it breaks the input up into values and units, attempts to break each unit down into elementary (basic) units, modifies the value as it goes, until it has no more input or can not convert a unit into a basic unit.";
+instr = args[1];
+units = this.basic_units_template;
+value = 1.0;
+top = 1;
+"Ensure that the division mark is a spearate word.";
+instr = $string_utils:substitute(instr, {{"/", " / "}});
+while (instr)
+  "Grab the next word to process";
+  {first, instr} = $string_utils:first_word(instr);
+  if (first == "/")
+    "Now we're working with values under the division mark - units with negative exponents.";
+    top = 1 - top;
+    continue;
+  elseif (match(first, "|"))
+    "The word was a value expressed as a ratio. Compute the ratio and adjust the value accordingly.";
+    value = this:_do_value(first, value, top);
+    continue;
+  elseif ($string_utils:is_integer(first) || $string_utils:is_float(first))
+    "The word was a value. Adjust the accumulated value accordingly.";
+    value = top ? value * tofloat(first) | (value / tofloat(first));
+    continue;
+  elseif (match(first, "[0-9]$"))
+    "The word ends with a digit, but isn't a value. It must be a powered unit. Expand it: cm3 => cm cm cm";
+    subs = match(first, "%([a-zA-Z]+%)%([0-9]+%)");
+    first = substitute("%1", subs);
+    power = toint(substitute("%2", subs));
+    while (power > 0)
+      instr = (first + " ") + instr;
+      power = power - 1;
+    endwhile
+    continue;
+  else
+    "Check to see if the word starts with one or more metric prefix and attempt to evaluate the prefix.";
+    {first, value, top} = this:_try_metric_prefix(first, value, top);
+    "Check to see if we have a basic unit. If so, adjust the apropriate unit count.";
+    if (index = first in this.basic_units)
+      units[index][2] = top ? units[index][2] + 1 | (units[index][2] - 1);
+      continue;
+    elseif (prop = `this.(first) ! E_PROPNF => 0')
+      "Check to see if this is a known unit. If so, convert it and adjust the value and units.";
+      result = this:_do_convert(prop);
+      value = top ? value * result[1] | (value / result[1]);
+      for i in [1..length(units)]
+        units[i][2] = top ? units[i][2] + result[2][i][2] | (units[i][2] - result[2][i][2]);
+      endfor
+      continue;
+    elseif (first[$] == "s")
+      "Check to see if this is a normal 's'-ending plural, and try to do the above checks again.";
+      temp = first[1..$ - 1];
+      if (index = temp in this.basic_units)
+        units[index][2] = top ? units[index][2] + 1 | (units[index][2] - 1);
+        continue;
+      elseif (prop = `this.(temp) ! E_PROPNF => 0')
+        result = this:_do_convert(prop);
+        value = top ? value * result[1] | (value / result[1]);
+        for i in [1..length(units)]
+          units[i][2] = top ? units[i][2] + result[2][i][2] | (units[i][2] - result[2][i][2]);
+        endfor
+        continue;
+      endif
+    endif
+    "We were unable to find any conversion for the current word, so halt all operation and return 0.";
+    return 0;
+  endif
+endwhile
+"We were able to successfully convert each part of the input. Return the equivalent value and units.";
+return {value, units};
+.
+
+@verb #93:"_try_metric_prefix" this none this
+@program #93:_try_metric_prefix
+"THIS VERB IS NOT INTENDED FOR USER USAGE.";
+":_try_metric_prefix runs through the metrix multipliers and tries to match them against the beginning of the input string. If successful, the given value is adjusted appropritately, and the input string is modified. The verb loops until there are no more prefix matches. (Hence, \"kilodecameter\" can be matched with only one verb call.";
+"If anyone knows of other possibilities here, please let me know.";
+{first, value, top} = args;
+while (1)
+  if (subs = match(first, "^yocto%(.*%)"))
+    first = substitute("%1", subs);
+    value = top ? value / 1e+24 | (value * 1e+24);
+    continue;
+  endif
+  if (subs = match(first, "^zepto%(.*%)"))
+    first = substitute("%1", subs);
+    value = top ? value / 1e+21 | (value * 1e+21);
+    continue;
+  endif
+  if (subs = match(first, "^atto%(.*%)"))
+    first = substitute("%1", subs);
+    value = top ? value / 1e+18 | (value * 1e+18);
+    continue;
+  endif
+  if (subs = match(first, "^femto%(.*%)"))
+    first = substitute("%1", subs);
+    value = top ? value / 1e+15 | (value * 1e+15);
+    continue;
+  endif
+  if (subs = match(first, "^pico%(.*%)"))
+    first = substitute("%1", subs);
+    value = top ? value / 1000000000000.0 | (value * 1000000000000.0);
+    continue;
+  endif
+  if (subs = match(first, "^nano%(.*%)"))
+    first = substitute("%1", subs);
+    value = top ? value / 1000000000.0 | (value * 1000000000.0);
+    continue;
+  endif
+  if (match(first, "^micron"))
+    break;
+  endif
+  if (subs = match(first, "^micro%(.*%)"))
+    first = substitute("%1", subs);
+    value = top ? value / 1000000.0 | (value * 1000000.0);
+    continue;
+  endif
+  if (subs = match(first, "^milli%(.*%)"))
+    first = substitute("%1", subs);
+    value = top ? value / 1000.0 | (value * 1000.0);
+    continue;
+  endif
+  if (subs = match(first, "^centi%(.*%)"))
+    first = substitute("%1", subs);
+    value = top ? value / 100.0 | (value * 100.0);
+    continue;
+  endif
+  if (subs = match(first, "^deci%(.*%)"))
+    first = substitute("%1", subs);
+    value = top ? value / 10.0 | (value * 10.0);
+    continue;
+  endif
+  if (subs = match(first, "^%(deca%|deka%)%(.*%)"))
+    first = substitute("%2", subs);
+    value = (!top) ? value / 10.0 | (value * 10.0);
+    continue;
+  endif
+  if (subs = match(first, "^hecto%(.*%)"))
+    first = substitute("%1", subs);
+    value = (!top) ? value / 100.0 | (value * 100.0);
+    continue;
+  endif
+  if (subs = match(first, "^kilo%(.*%)"))
+    first = substitute("%1", subs);
+    value = (!top) ? value / 1000.0 | (value * 1000.0);
+    continue;
+  endif
+  if (subs = match(first, "^mega%(.*%)"))
+    first = substitute("%1", subs);
+    value = (!top) ? value / 1000000.0 | (value * 1000000.0);
+    continue;
+  endif
+  if (subs = match(first, "^giga%(.*%)"))
+    first = substitute("%1", subs);
+    value = (!top) ? value / 1000000000.0 | (value * 1000000000.0);
+    continue;
+  endif
+  if (subs = match(first, "^tera%(.*%)"))
+    first = substitute("%1", subs);
+    value = (!top) ? value / 1000000000000.0 | (value * 1000000000000.0);
+    continue;
+  endif
+  if (subs = match(first, "^peta%(.*%)"))
+    first = substitute("%1", subs);
+    value = (!top) ? value / 1e+15 | (value * 1e+15);
+    continue;
+  endif
+  if (subs = match(first, "^exa%(.*%)"))
+    first = substitute("%1", subs);
+    value = (!top) ? value / 1e+18 | (value * 1e+18);
+    continue;
+  endif
+  if (subs = match(first, "^zetta%(.*%)"))
+    first = substitute("%1", subs);
+    value = (!top) ? value / 1e+21 | (value * 1e+21);
+    continue;
+  endif
+  if (subs = match(first, "^yotta%(.*%)"))
+    first = substitute("%1", subs);
+    value = (!top) ? value / 1e+24 | (value * 1e+24);
+    continue;
+  endif
+  break;
+endwhile
+return {first, value, top};
+.
+
+@verb #93:"_format_units" this none this
+@program #93:_format_units
+"THIS VERB IS NOT INTENDED FOR USER USAGE.";
+":_format_units takes the associative list of units and powers and construct a more user friendly string.";
+top = bottom = "";
+for pair in (args)
+  if (pair[2] > 0)
+    top = tostr(top, " ", pair[1], (pair[2] > 1) ? pair[2] | "");
+  elseif (pair[2] < 0)
+    bottom = tostr(bottom, " ", pair[1], (pair[2] < -1) ? -pair[2] | "");
+  endif
+endfor
+if (bottom)
+  return ((top + " /") + bottom)[2..$];
+else
+  return top[2..$];
+endif
+.
+
+@verb #93:"K_to_C degK_to_degC" this none this
+@program #93:K_to_C
+":K_to_C (INT|FLOAT <Kelvin>) => FLOAT <Celcius>";
+"This verb converts Kelvin degrees to Celcius degrees.";
+return tofloat(args[1]) - 273.0;
+.
+
+@verb #93:"C_to_K degC_to_degK" this none this
+@program #93:C_to_K
+":C_to_K (INT|FLOAT <Celcius>) => FLOAT <Kelvin>";
+"This verb converts Celcius degrees to Kelvin degrees.";
+return tofloat(args[1]) + 273.0;
+.
+
+@verb #93:"F_to_R degF_to_degR" this none this
+@program #93:F_to_R
+":F_to_R (INT|FLOAT <Fahrenheit>) => FLOAT <Rankine>";
+"This verb converts Fahrenheit degrees to Rankine degrees.";
+return tofloat(args[1]) + 459.67;
+.
+
+@verb #93:"R_to_F degR_to_degF" this none this
+@program #93:R_to_F
+":R_to_F (INT|FLOAT <Rankine>) => FLOAT <Fahrenheit>";
+"This verb converts Rankine degrees to Fahrenheit degrees.";
+return tofloat(args[1]) - 459.67;
+.
+
+@verb #93:"_do_value" this none this
+@program #93:_do_value
+"THIS VERB IS NOT INTENDED FOR USER USAGE.";
+":_do_value takes a string of the form <number>|<number>, interprets it as a ratio, and applies that ratio to the incoming 'value' accordingly with the 'top' input, and returns it back to the calling verb.";
+{first, value, top} = args;
+{numer, denom} = $string_utils:explode(first, "|");
+return top ? (value * tofloat(numer)) / tofloat(denom) | ((value * tofloat(denom)) / tofloat(numer));
+.
+
+@prop #93."basic_units" {} r
+;;#93.("basic_units") = {"m", "kg", "s", "coul", "candela", "radian", "bit", "erlang", "kelvin"}
+@prop #93."pi" "3.14159265358979323846264338327950288" r
+@prop #93."c" "2.99792458e8 m/sec" r
+@prop #93."g" "9.80665 m/sec2" r
+@prop #93."au" "1.49599e11 m" r
+@prop #93."mole" "6.022045e23" r
+@prop #93."e" "1.6020e-19 coul" r
+@prop #93."abcoulomb" "10 coul" r
+@prop #93."force" "g" r
+@prop #93."slug" "lb g sec2/ft" r
+@prop #93."mercury" "1.3157895 atm/m" r
+@prop #93."hg" "mercury" r
+@prop #93."torr" "mm hg" r
+@prop #93."%" "1|100" r
+@prop #93."percent" "%" r
+@prop #93."cg" "centigram" r
+@prop #93."atmosphere" "1.01325 bar" r
+@prop #93."atm" "atmosphere" r
+@prop #93."psi" "lb g/in2" r
+@prop #93."bar" "1e6 dyne/cm2" r
+@prop #93."chemamu" "1.66024e-24 g" r
+@prop #93."physamu" "1.65979e-24 g" r
+@prop #93."amu" "chemamu" r
+@prop #93."chemdalton" "chemamu" r
+@prop #93."dalton" "chemamu" r
+@prop #93."physdalton" "physamu" r
+@prop #93."dozen" "12" r
+@prop #93."bakersdozen" "13" r
+@prop #93."quire" "25" r
+@prop #93."ream" "500" r
+@prop #93."gross" "144" r
+@prop #93."hertz" "1/sec" r
+@prop #93."cps" "hertz" r
+@prop #93."hz" "hertz" r
+@prop #93."khz" "kilohz" r
+@prop #93."mhz" "megahz" r
+@prop #93."rutherford" "1e6/sec" r
+@prop #93."degree" "1|180 pi radian" r
+@prop #93."circle" "2 pi radian" r
+@prop #93."turn" "2 pi radian" r
+@prop #93."revolution" "360 degrees" r
+@prop #93."rpm" "revolution/minute" r
+@prop #93."grade" "1|400 circle" r
+@prop #93."grad" "1|400 circle" r
+@prop #93."sign" "1|12 circle" r
+@prop #93."arcdeg" "1 degree" r
+@prop #93."arcmin" "1|60 arcdeg" r
+@prop #93."arcsec" "1|60 arcmin" r
+@prop #93."karat" "1|24" r
+@prop #93."proof" "1|200" r
+@prop #93."mpg" "mile/gal" r
+@prop #93."curie" "3.7e10/sec" r
+@prop #93."stoke" "1 cm2/sec" r
+@prop #93."steradian" "radian radian" r
+@prop #93."sr" "steradian" r
+@prop #93."sphere" "4 pi steradian" r
+@prop #93."ps" "picosec" r
+@prop #93."us" "microsec" r
+@prop #93."ns" "nanosec" r
+@prop #93."ms" "millisec" r
+@prop #93."sec" "second" r
+@prop #93."minute" "60 sec" r
+@prop #93."min" "minute" r
+@prop #93."hour" "60 min" r
+@prop #93."hr" "hour" r
+@prop #93."day" "24 hr" r
+@prop #93."week" "7 day" r
+@prop #93."quadrant" "5400 minute" r
+@prop #93."fortnight" "14 day" r
+@prop #93."year" "365.24219879 day" r
+@prop #93."yr" "year" r
+@prop #93."month" "1|12 year" r
+@prop #93."mo" "month" r
+@prop #93."decade" "10 year" r
+@prop #93."century" "100 year" r
+@prop #93."millenium" "1000 year" r
+@prop #93."gm" "gram" r
+@prop #93."myriagram" "10 kg" r
+@prop #93."mg" "milligram" r
+@prop #93."metricton" "1000 kg" r
+@prop #93."gamma" "1e-6 g" r
+@prop #93."metriccarat" "200 mg" r
+@prop #93."quintal" "100 kg" r
+@prop #93."lb" "0.45359237 kg" r
+@prop #93."pound" "lb" r
+@prop #93."lbf" "lb g" r
+@prop #93."cental" "100 lb" r
+@prop #93."stone" "14 lb" r
+@prop #93."ounce" "1|16 lb" r
+@prop #93."oz" "ounce" r
+@prop #93."avdram" "1|16 oz" r
+@prop #93."usdram" "1|8 oz" r
+@prop #93."dram" "avdram" r
+@prop #93."dr" "dram" r
+@prop #93."grain" "1|7000 lb" r
+@prop #93."gr" "grain" r
+@prop #93."shortton" "2000 lb" r
+@prop #93."ton" "shortton" r
+@prop #93."longquarter" "28 lb" r
+@prop #93."shortquarter" "500 lb" r
+@prop #93."longton" "2240 lb" r
+@prop #93."longhundredweight" "112 lb" r
+@prop #93."shorthundredweight" "100 lb" r
+@prop #93."wey" "252 lb" r
+@prop #93."carat" "205.3 mg" r
+@prop #93."scruple" "20 grain" r
+@prop #93."pennyweight" "24 grain" r
+@prop #93."apdram" "60 grain" r
+@prop #93."apounce" "480 grain" r
+@prop #93."appound" "5760 grain" r
+@prop #93."cm" "centimeter" r
+@prop #93."mm" "millimeter" r
+@prop #93."km" "kilometer" r
+@prop #93."parsec" "au radian/arcsec" r
+@prop #93."pc" "parsec" r
+@prop #93."nm" "nanometer" r
+@prop #93."micron" "1e-6 meter" r
+@prop #93."angstrom" "1e-8 meter" r
+@prop #93."fermi" "1e-13 cm" r
+@prop #93."point" "1|72.27 in" r
+@prop #93."pica" "0.166044 inch" r
+@prop #93."caliber" "0.01 in" r
+@prop #93."barleycorn" "1|3 in" r
+@prop #93."inch" "2.54 cm" r
+@prop #93."in" "inch" r
+@prop #93."mil" "0.001 in" r
+@prop #93."palm" "3 in" r
+@prop #93."hand" "4 in" r
+@prop #93."span" "9 in" r
+@prop #93."foot" "12 in" r
+@prop #93."feet" "foot" r
+@prop #93."ft" "foot" r
+@prop #93."cubit" "18 in" r
+@prop #93."pace" "30 inch" r
+@prop #93."yard" "3 ft" r
+@prop #93."yd" "yard" r
+@prop #93."fathom" "6 ft" r
+@prop #93."rod" "16.5 ft" r
+@prop #93."rd" "rod" r
+@prop #93."rope" "20 ft" r
+@prop #93."ell" "45 in" r
+@prop #93."skein" "360 feet" r
+@prop #93."cable" "720 ft" r
+@prop #93."furlong" "660 ft" r
+@prop #93."nmile" "1852 m" r
+@prop #93."nautmile" "nmile" r
+@prop #93."bolt" "120 feet" r
+@prop #93."mile" "5280 feet" r
+@prop #93."mi" "mile" r
+@prop #93."league" "3 mi" r
+@prop #93."nautleague" "3 nmile" r
+@prop #93."lightyear" "c yr" r
+@prop #93."engineerschain" "100 ft" r
+@prop #93."engineerslink" "0.01 engineerschain" r
+@prop #93."gunterchain" "66 ft" r
+@prop #93."gunterlink" "0.01 gunterchain" r
+@prop #93."ramdenchain" "100 ft" r
+@prop #93."ramdenlink" "0.01 ramdenchain" r
+@prop #93."acre" "43560 ft2" r
+@prop #93."rood" "0.25 acre" r
+@prop #93."are" "100 m2" r
+@prop #93."centare" "0.01 are" r
+@prop #93."hectare" "100 are" r
+@prop #93."barn" "1e-24 cm2" r
+@prop #93."section" "mi2" r
+@prop #93."township" "36 mi2" r
+@prop #93."cc" "cm3" r
+@prop #93."liter" "1000 cc" r
+@prop #93."l" "liter" r
+@prop #93."ml" "milliliter" r
+@prop #93."registerton" "100 ft3" r
+@prop #93."cord" "128 ft3" r
+@prop #93."boardfoot" "144 in3" r
+@prop #93."boardfeet" "boardfoot" r
+@prop #93."cordfoot" "0.125 cord" r
+@prop #93."cordfeet" "cordfoot" r
+@prop #93."last" "80 bu" r
+@prop #93."perch" "24.75 ft3" r
+@prop #93."stere" "m3" r
+@prop #93."cfs" "ft3/sec" r
+@prop #93."gallon" "231 in3" r
+@prop #93."imperial" "1.200949" r
+@prop #93."gal" "gallon" r
+@prop #93."quart" "1|4 gal" r
+@prop #93."qt" "quart" r
+@prop #93."magnum" "2 qt" r
+@prop #93."pint" "1|2 qt" r
+@prop #93."pt" "pint" r
+@prop #93."cup" "1|2 pt" r
+@prop #93."gill" "1|4 pt" r
+@prop #93."fifth" "1|5 gal" r
+@prop #93."firkin" "72 pint" r
+@prop #93."barrel" "31.5 gal" r
+@prop #93."petrbarrel" "42 gal" r
+@prop #93."hogshead" "63 gal" r
+@prop #93."hd" "hogshead" r
+@prop #93."tun" "252 gal" r
+@prop #93."kilderkin" "18 imperial gal" r
+@prop #93."noggin" "1 imperial gill" r
+@prop #93."floz" "1|4 gill" r
+@prop #93."fldr" "1|32 gill" r
+@prop #93."tablespoon" "4 fldr" r
+@prop #93."teaspoon" "1|3 tablespoon" r
+@prop #93."minim" "1|480 floz" r
+@prop #93."pk" "peck" r
+@prop #93."bushel" "8 dry gal" r
+@prop #93."dry" "268.8025 in3/gallon" r
+@prop #93."bu" "bushel" r
+@prop #93."british" "277.4193|231" r
+@prop #93."brbucket" "4 dry british gal" r
+@prop #93."brpeck" "2 dry british gal" r
+@prop #93."brbushel" "8 dry british gal" r
+@prop #93."brfirkin" "1.125 brbushel" r
+@prop #93."dryquartern" "2.272980 l" r
+@prop #93."liqquarten" "0.1420613 l" r
+@prop #93."butt" "126 gal" r
+@prop #93."bag" "3 brbushels" r
+@prop #93."brbarrel" "4.5 brbushels" r
+@prop #93."seam" "8 brbushels" r
+@prop #93."drachm" "3.551531 ml" r
+@prop #93."newton" "kg m/sec2" r
+@prop #93."pascal" "nt/m2" r
+@prop #93."nt" "newton" r
+@prop #93."joule" "nt m" r
+@prop #93."cal" "4.1868 joule" r
+@prop #93."gramcalorie" "cal" r
+@prop #93."calorie" "cal" r
+@prop #93."btu" "1054.35 joule" r
+@prop #93."frigorie" "kilocal" r
+@prop #93."kcal" "kilocal" r
+@prop #93."kcalorie" "kilocal" r
+@prop #93."langley" "cal/cm cm" r
+@prop #93."dyne" "erg/cm" r
+@prop #93."poundal" "ft lb/sec2" r
+@prop #93."pdl" "poundal" r
+@prop #93."erg" "1e-7 joule" r
+@prop #93."horsepower" "550 ft lb g/sec" r
+@prop #93."hp" "horsepower" r
+@prop #93."poise" "gram/cm sec" r
+@prop #93."reyn" "6.89476e-6 centipoise" r
+@prop #93."rhe" "1/poise" r
+@prop #93."coul" "coulomb" r
+@prop #93."statcoul" "3.335635e-10 coul" r
+@prop #93."ampere" "coul/sec" r
+@prop #93."abampere" "10 amp" r
+@prop #93."amp" "ampere" r
+@prop #93."watt" "joule/sec" r
+@prop #93."volt" "watt/amp" r
+@prop #93."v" "volt" r
+@prop #93."abvolt" "10 volt" r
+@prop #93."statvolt" "299.7930 volt" r
+@prop #93."ohm" "volt/amp" r
+@prop #93."abohm" "10 ohm" r
+@prop #93."mho" "1/ohm" r
+@prop #93."abmho" "10 mho" r
+@prop #93."siemens" "mho" r
+@prop #93."farad" "coul/volt" r
+@prop #93."abfarad" "10 farad" r
+@prop #93."statfarad" "1.112646e-12 farad" r
+@prop #93."pf" "picofarad" r
+@prop #93."abhenry" "10 henry" r
+@prop #93."henry" "sec2/farad" r
+@prop #93."stathenry" "8.987584e11 henry" r
+@prop #93."mh" "millihenry" r
+@prop #93."weber" "volt sec" r
+@prop #93."gauss" "maxwell/cm2" r
+@prop #93."electronvolt" "e volt" r
+@prop #93."ev" "e volt" r
+@prop #93."kev" "1e3 ev" r
+@prop #93."mev" "1e6 ev" r
+@prop #93."bev" "1e9 ev" r
+@prop #93."faraday" "9.648456e4coul" r
+@prop #93."gilbert" "0.7957747154 amp" r
+@prop #93."oersted" "1 gilbert / cm" r
+@prop #93."oe" "oersted" r
+@prop #93."cd" "candela" r
+@prop #93."lumen" "cd sr" r
+@prop #93."lux" "lumen/m2" r
+@prop #93."footcandle" "lumen/ft2" r
+@prop #93."footlambert" "cd/pi ft2" r
+@prop #93."lambert" "cd/pi cm2" r
+@prop #93."phot" "lumen/cm2" r
+@prop #93."stilb" "cd/cm2" r
+@prop #93."candle" "cd" r
+@prop #93."engcandle" "1.04 cd" r
+@prop #93."germancandle" "1.05 cd" r
+@prop #93."carcel" "9.61 cd" r
+@prop #93."hefnerunit" ".92 cd" r
+@prop #93."candlepower" "12.566370 lumen" r
+@prop #93."baud" "bit/sec" r
+@prop #93."byte" "8 bit" r
+@prop #93."kb" "1024 byte" r
+@prop #93."mb" "1024 kb" r
+@prop #93."gb" "1024 mb" r
+@prop #93."word" "4 byte" r
+@prop #93."long" "4 word" r
+@prop #93."block" "512 byte" r
+@prop #93."mph" "mile/hr" r
+@prop #93."knot" "nmile/hr" r
+@prop #93."brknot" "6080 ft/hr" r
+@prop #93."mach" "331.45 m/sec" r
+@prop #93."energy" "c2" r
+@prop #93."ccs" "1|36 erlang" r
+@prop #93."peck" "2 dry gallon" r
+@prop #93."arpentcan" "27.52 mi" r
+@prop #93."apostilb" "cd/pi m2" r
+@prop #93."arpentlin" "191.835 ft" r
+@prop #93."atomicmassunit" "amu" r
+@prop #93."barie" "1e-1 nt/m2" r
+@prop #93."barye" "1e-1 nt/m2" r
+@prop #93."biot" "10 amp" r
+@prop #93."blondel" "cd/pi m2" r
+@prop #93."bottommeasure" "1|40 in" r
+@prop #93."refrigeration" "12000 but/ton hr" r
+@prop #93."centesimalminute" "1e-2 grade" r
+@prop #93."centesimalsecond" "1e-4 grade" r
+@prop #93."chain" "gunterchain" r
+@prop #93."circularinch" "1|4 pi in2" r
+@prop #93."circularmil" "1e-6|4 pi in2" r
+@prop #93."clusec" "1e-8 mm hg m3/s" r
+@prop #93."coomb" "4 bu" r
+@prop #93."crith" "9.06e-2 gram" r
+@prop #93."dioptre" "1/m" r
+@prop #93."displacementton" "35 ft3" r
+@prop #93."dopplezentner" "100 kg" r
+@prop #93."equivalentfootcandle" "lumen/pi ft2" r
+@prop #93."equivalentlux" "lumen/pi m2" r
+@prop #93."equivalentphot" "cd/pi cm2" r
+@prop #93."finger" "7|8 in" r
+@prop #93."franklin" "3.33564e-10 coul" r
+@prop #93."galileo" "1e-2 m/sec2" r
+@prop #93."geographicalmile" "nmile" r
+@prop #93."hefnercandle" "hefnerunit" r
+@prop #93."homestead" "1|4 mi2" r
+@prop #93."hyl" "gram force sec2/m" r
+@prop #93."imaginarycubicfoot" "1.4 ft3" r
+@prop #93."jeroboam" "4|5 gal" r
+@prop #93."line" "1|12 in" r
+@prop #93."link" "66|100 ft" r
+@prop #93."lusec" "1e-6 mm hg m3/s" r
+@prop #93."marineleague" "3nmile" r
+@prop #93."maxwell" "1e-8 weber" r
+@prop #93."mgd" "megagal/day" r
+@prop #93."minersinch" "1.5 ft3/min" r
+@prop #93."nail" "1|16 yd" r
+@prop #93."nit" "cd/m2" r
+@prop #93."nox" "1e-3 lux" r
+@prop #93."pieze" "1e3 nt/mt2" r
+@prop #93."pipe" "4 barrel" r
+@prop #93."pole" "rd" r
+@prop #93."quarter" "9 in" r
+@prop #93."quartersection" "1|4 mi2" r
+@prop #93."ra" "100 erg/gram" r
+@prop #93."rankine" "1.8 kelvin" r
+@prop #93."rehoboam" "156 floz" r
+@prop #93."rontgen" "2.58e-4 curie/kg" r
+@prop #93."rydberg" "1.36054e1 ev" r
+@prop #93."sabin" "1 ft2" r
+@prop #93."shippington" "40 ft3" r
+@prop #93."sigma" "microsec" r
+@prop #93."skot" "1e-3 apostilb" r
+@prop #93."spat" "sphere" r
+@prop #93."spindle" "14400 yd" r
+@prop #93."square" "100 ft2" r
+@prop #93."sthene" "1e3 nt" r
+@prop #93."tesla" "weber/m2" r
+@prop #93."thermie" "1e6 cal" r
+@prop #93."timberfoot" "ft3" r
+@prop #93."tonne" "1e6 gram" r
+@prop #93."water" "0.22491|2.54 kg/m2 sec2" r
+@prop #93."xunit" "1.00202e-13 m" r
+@prop #93."k" "1.38047e-16 erg/kelvin" r
+@prop #93."puncheon" "84 gal" r
+@prop #93."tnt" "4.6e6 m2/sec2" r
+@prop #93."basic_units_template" {} r
+;;#93.("basic_units_template") = {{"m", 0}, {"kg", 0}, {"s", 0}, {"coul", 0}, {"candela", 0}, {"radian", 0}, {"bit", 0}, {"erlang", 0}, {"kelvin", 0}}
+@prop #93."meter" "m" r
+@prop #93."gram" "1|1000 kg" r
+@prop #93."second" "s" r
+@prop #93."inches" "inch" r
+@prop #93."sennight" "1 week" r
+@prop #93."cubichectare" "1000000 m3" r
+@prop #93."astronomicalunit" "au" r #2
+@prop #93."fluidounce" "floz" r #2
+@prop #93."tsp" "teaspoon" r #2
+@prop #93."tbsp" "tablespoon" r #2
+;;#93.("help_msg") = {"Utility verbs for converting from one unit of measure to another.", "", "Unusual conversions:", ":dd_to_dms => converts decimal (INT or FLOAT) Degrees into Degrees, Minutes,", "              and Seconds. (Also works for decimal Hours.)", ":dms_to_dd => converts from Degrees (or Hours), Minutes, and Seconds to", "              decimal Degrees (or Hours).", ":rect_to_polar => converts from cartesian (x,y) coordinates to polar.", ":polar_to_rect => converts from polar (r, theta) coordinates to cartesian.", ":F_to_C => converts from Fahrenheit to Celsius.", ":C_to_F => converts from Celsius to Fahrenheit.", ":C_to_K => converts from Celsius to Kelvin.", ":K_to_C => converts from Kelvin to Celsius.", ":F_to_R => converts from Fahrenheit to Rankine.", ":R_to_F => converts from Rankine to Fahrenheit.", "", "Standard conversions:", ":convert => takes two string inputs and attempts to determine the ", "            multiplicative conversion factor. See the verb help for details", "            and input format.\""}
+;;#93.("aliases") = {"Conversion Utils"}
+;;#93.("description") = "This is a utilities package for converting from one unit of measurement to another. Type 'help #770' for more details."
+;;#93.("object_size") = {45582, 1641541193}

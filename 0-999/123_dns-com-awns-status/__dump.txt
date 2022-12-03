@@ -1,0 +1,12 @@
+@create #104 named dns-com-awns-status:dns-com-awns-status
+@verb #123:"status" this none this
+@program #123:status
+{session, text} = args;
+if ((caller == this) || $perm_utils:controls(caller_perms(), session.connection))
+  return this:send_(session, text);
+endif
+.
+
+;;#123.("messages_out") = {{"", {"text"}}}
+;;#123.("aliases") = {"dns-com-awns-status"}
+;;#123.("object_size") = {1394, 1669929999}

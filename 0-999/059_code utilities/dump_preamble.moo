@@ -9,4 +9,8 @@ for p in (properties(#0))
     pstring = "$" + p;
   endif
 endfor
-return tostr("@create ", pstring, " named ", dobj.name, ":", $string_utils:from_list(dobj.aliases, ","));
+if ($object_utils:has_property(dobj, "aliases"))
+  return tostr("@create ", pstring, " named ", dobj.name, ":", $string_utils:from_list(dobj.aliases, ","));
+else
+  return tostr("@create ", pstring, " named ", dobj.name);
+endif

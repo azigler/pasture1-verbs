@@ -1,0 +1,139 @@
+@create $generic_utils named Object Quota Utilities:Object Quota Utilities
+@verb #81:"initialize_quota" this none this
+@program #81:initialize_quota
+if (!caller_perms().wizard)
+  return E_PERM;
+else
+  args[1].ownership_quota = $wiz_utils.default_player_quota;
+endif
+.
+
+@verb #81:"init_for_core" this none this rxd #2
+@program #81:init_for_core
+if (!caller_perms().wizard)
+  return E_PERM;
+else
+  pass(@args);
+  "Uncomment this if you want to send the core out with object quota.";
+  "  $quota_utils = this";
+endif
+.
+
+@verb #81:"adjust_quota_for_programmer" this none this
+@program #81:adjust_quota_for_programmer
+if (!caller_perms().wizard)
+  return E_PERM;
+else
+  victim = args[1];
+  oldquota = victim.ownership_quota;
+  if ($object_utils:has_property($local, "second_char_registry") && $local.second_char_registry:is_second_char(victim))
+    "don't increment quota for 2nd chars when programmering";
+    victim.ownership_quota = oldquota;
+  else
+    victim.ownership_quota = oldquota + ($wiz_utils.default_programmer_quota - $wiz_utils.default_player_quota);
+  endif
+endif
+.
+
+@verb #81:"bi_create" this none this rxd #2
+@program #81:bi_create
+"Calls built-in create.";
+set_task_perms(caller_perms());
+return `create(@args) ! ANY';
+.
+
+@verb #81:"creation_permitted" this none this
+@program #81:creation_permitted
+$recycler:check_quota_scam(args[1]);
+return args[1].ownership_quota > 0;
+.
+
+@verb #81:"verb_addition_permitted property_addition_permitted" this none this
+@program #81:verb_addition_permitted
+return 1;
+.
+
+@verb #81:"display_quota" this none this
+@program #81:display_quota
+who = args[1];
+if (caller_perms() == who)
+  q = who.ownership_quota;
+  total = (typeof(who.owned_objects) == LIST) ? length(setremove(who.owned_objects, who)) | 0;
+  if (q == 0)
+    player:tell(tostr("You can't create any more objects", (total < 1) ? "." | tostr(" until you recycle some of the ", total, " you already own.")));
+  else
+    player:tell(tostr("You can create ", q, " new object", (q == 1) ? "" | "s", (total == 0) ? "." | tostr(" without recycling any of the ", total, " that you already own.")));
+  endif
+else
+  if ($perm_utils:controls(caller_perms(), who))
+    player:tell(tostr(who.name, "'s quota is currently ", who.ownership_quota, "."));
+  else
+    player:tell("Permission denied.");
+  endif
+endif
+.
+
+@verb #81:"get_quota quota_remaining" this none this
+@program #81:get_quota
+if ($perm_utils:controls(caller_perms(), args[1]) || (caller == this))
+  return args[1].ownership_quota;
+else
+  return E_PERM;
+endif
+.
+
+@verb #81:"charge_quota" this none this
+@program #81:charge_quota
+"Charge args[1] for the quota required to own args[2]";
+{who, what} = args;
+if ((caller == this) || caller_perms().wizard)
+  who.ownership_quota = who.ownership_quota - 1;
+else
+  return E_PERM;
+endif
+.
+
+@verb #81:"reimburse_quota" this none this
+@program #81:reimburse_quota
+"Reimburse args[1] for the quota required to own args[2]";
+{who, what} = args;
+if ((caller == this) || caller_perms().wizard)
+  who.ownership_quota = who.ownership_quota + 1;
+else
+  return E_PERM;
+endif
+.
+
+@verb #81:"set_quota" this none this
+@program #81:set_quota
+"Set args[1]'s quota to args[2]";
+{who, quota} = args;
+if (caller_perms().wizard || (caller == this))
+  return who.ownership_quota = quota;
+else
+  return E_PERM;
+endif
+.
+
+@verb #81:"preliminary_reimburse_quota" this none this
+@program #81:preliminary_reimburse_quota
+return 0;
+.
+
+@verb #81:"can_peek" this none this
+@program #81:can_peek
+"Is args[1] permitted to examine args[2]'s quota information?";
+return $perm_utils:controls(args[1], args[2]);
+.
+
+@verb #81:"can_touch" this none this
+@program #81:can_touch
+"Is args[1] permitted to examine args[2]'s quota information?";
+return args[1].wizard;
+.
+
+@prop #81."byte_based" 0 rc
+;;#81.("help_msg") = "This is the default package that interfaces to the $player/$prog quota manipulation verbs."
+;;#81.("aliases") = {"Object Quota Utilities"}
+;;#81.("description") = {"This is the Object Quota Utilities utility package.  See `help $object_quota_utils' for more details."}
+;;#81.("object_size") = {10488, 1641541193}

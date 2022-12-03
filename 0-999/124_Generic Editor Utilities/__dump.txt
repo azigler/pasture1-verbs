@@ -1,0 +1,984 @@
+@create $generic_utils named Generic Editor Utilities:generic inline editor,inline editor,inline,flexible editor interface utilities,editor interface utilities,interface utilities,utilities,editor,interface,flexible
+@verb #124:"editor" this none this
+@program #124:editor
+{?text = {}, ?prompt = "[Type lines of input; use `.' to end.]", ?commandchar = this:get_opt("cmd_char", player), ?verb = 0, ?extra = {}} = args;
+"Arguments:";
+"  text: The text to be edited.";
+"  prompt: The prompt displayed to the player to ask for input.";
+"  commandchar: The character used to indicate an editor command vs text to be added.";
+"  verb: A flag indicating whether or not this is verb code, which will add editor commands for compilation and commenting.";
+"  extra: Extra information passed in, primarily for verb info to use with the compile command.";
+if (typeof(text) == STR)
+  text = {text};
+elseif (typeof(text) != LIST)
+  return raise(E_TYPE, "Invalid datatype");
+endif
+this:log_last_edit(player, task_id());
+state = $edit_state:new(text, verb, extra);
+"NOTE: The waif is created AND destroyed in-verb. It is NOT persistant!";
+player:tell(prompt);
+if (state.verb && state.extra)
+  verb_name = tostr($string_utils:nn(state.extra[1][1]), ":", state.extra[1][2]);
+  player:tell("Now editing ", verb_name, ".");
+  state.verb_name = verb_name;
+endif
+state.ins = length(state.text) + 1;
+player:tell("Insertion point is before line ", state.ins, ".");
+if (this:get_option("expert") == 0)
+  player:tell();
+  player:tell("Type '", commandchar, "help' for assistance, '", commandchar, "abort' to abandon.");
+endif
+while loop (1)
+  try
+    if (!player:is_listening())
+      return;
+    endif
+    cont = 1;
+    (!this:get_option("no_line_notifies")) && player:tell("  >");
+    line = read(player);
+    if (typeof(line) != STR)
+      return state.text;
+    endif
+    if (line == "@abort")
+      player:tell(">> Command Aborted <<");
+      kill_task(task_id());
+    elseif (line == "..")
+      line = ".";
+    elseif (line == ".")
+      line = this:get_option("cmd_char") + "done";
+    endif
+    if (`line[1] ! ANY' == commandchar)
+      cmd = $string_utils:explode(line[2..$]);
+      if ((commandchar == ".") && (!cmd))
+        line = this:get_option("cmd_char") + "done";
+      elseif (!cmd)
+        player:tell("You must enter a command. (", commandchar, "help for help.)");
+        continue;
+      endif
+      state.command = cmd[1];
+      state.arg = cmd[2..$];
+      if (state.command in {"insert", "ins", "inse", "inser"})
+        this:cmd_insert(state);
+      elseif (state.command in {"previous", "prev", "p"})
+        this:cmd_previous(state);
+      elseif (state.command in {"next", "n"})
+        this:cmd_next(state);
+      elseif (state.command in {"paste", "load"})
+        this:cmd_load(state);
+      elseif (state.command in {"copy", "save"})
+        this:cmd_save(state);
+      elseif (state.command == "pass")
+        this:cmd_pass(state);
+      elseif (state.command in {"reload", "rehash"})
+        return this:cmd_reload(@args, state);
+      elseif (state.command in {"change", "changeline"})
+        this:cmd_changeline(state);
+      elseif (state.command in {"replace", "repl", "re"})
+        this:cmd_replace(state);
+      elseif (state.command in {"find", "search", "GREP", "f", "s"})
+        this:cmd_grep(state);
+      elseif (state.command in {"done", "quit", "q"})
+        if (typeof(ret = this:cmd_quit(state)) == ERR)
+          continue;
+        else
+          return state.text;
+        endif
+      elseif (state.command in {"abort", "abandon", "q!"})
+        player:tell(">> Command Aborted <<");
+        kill_task(task_id());
+      elseif ((state.verb && state.extra) && (state.command in {"what", "verb"}))
+        player:tell("Currently editing: ", state.extra[1][1]:nn(), ":", state.extra[1][2], ".");
+      elseif ((state.verb && state.extra) && (state.command in {"compile", "w", "send"}))
+        {object, verbname} = state.extra[1];
+        program = this:program_verb(object, verbname, state);
+      elseif (state.verb && (state.command[1] == "/"))
+        "Assume they want to make a verb comment.";
+        line = ("\"" + line[3..$]) + "\";";
+        cont = 0;
+      elseif (state.command == "import")
+        this:cmd_paste_letter(state);
+      elseif (state.command == "set")
+        this:options($string_utils:from_list(state.arg, " "));
+      elseif (state.command in {"del", "dele", "delet", "delete", "erase", "rm"})
+        this:cmd_delete(state);
+      elseif (state.command in {"list", "l", "view"})
+        this:cmd_list(state);
+      elseif (state.verb && (state.command in {"comment", "commentify"}))
+        this:cmd_commentify(state);
+      elseif (state.verb && (state.command in {"uncomment", "uncommentify"}))
+        this:cmd_uncommentify(state);
+      elseif (state.command in {"spellcheck", "spell"})
+        state.text = $spell:interactive_spellcheck(state.text);
+        player:tell("Spell check completed.");
+      elseif (state.command == "count")
+        this:cmd_count(state);
+      elseif (state.verb && (state.command in {"tb", "jtb"}))
+        this:cmd_traceback(state);
+      elseif (state.verb && (state.command in {"ptb", "print_traceback"}))
+        this:cmd_print_traceback(state);
+      elseif (state.verb && (state.command in {"local", "localedit"}))
+        this:cmd_localedit(state);
+      elseif (state.command in {"format", "form"})
+        this:cmd_format(state);
+      elseif (state.command in {"help", "?"})
+        this:cmd_help(state);
+      elseif (state.command in {"clipboard", "saved", "clip"})
+        this:cmd_show_clipboard(state);
+      else
+        player:tell("Unrecognized command. (", commandchar, "help for help.)");
+      endif
+      if (cont != 0)
+        continue;
+      endif
+    endif
+    this:do_add_line(state, line);
+  except error (ANY)
+    player:tell("Something has gone wrong...");
+    player:tell(toliteral(error));
+    break;
+    continue;
+  endtry
+endwhile
+.
+
+@verb #124:"parse_range" this none this xd
+@program #124:parse_range
+{arg, maxrange, insertion} = args;
+if (typeof(arg) == LIST)
+  arg = $string_utils:from_list(arg, " ");
+endif
+range = {0, 0};
+explode_by = {"..", " ", "-", "+"};
+exploded_by = 0;
+for x in (explode_by)
+  expl = $string_utils:explode(arg, x);
+  if (length(expl) > 1)
+    exploded_by = x;
+    break;
+  endif
+endfor
+if (length(expl) > 2)
+  return tostr("Junk at end of command: ", $string_utils:from_list(expl[3..$], " "), ".");
+elseif (length(expl) == 1)
+  if ((single = expl[1]) == "$")
+    range = {maxrange, maxrange};
+  elseif (single == "^")
+    range = {insertion, insertion};
+  elseif ((toint(single) > 0) && (toint(single) <= maxrange))
+    range = {toint(single), toint(single)};
+  endif
+else
+  for x in (expl)
+    if (x == "$")
+      line = maxrange;
+    elseif (x == "^")
+      line = insertion;
+    elseif (!$string_utils:is_numeric(x))
+      return tostr("Garbled Range: ", arg, " - should be integers");
+    elseif ((toint(x) <= 0) || (toint(x) > maxrange))
+      return tostr("Lines range from 1 to ", maxrange, ".");
+    else
+      line = toint(x);
+    endif
+    range[x in expl] = line;
+  endfor
+endif
+if (exploded_by == "+")
+  increment_line = range[1] + range[2];
+  range = {increment_line, increment_line};
+endif
+if (range[1] > range[2])
+  return tostr("Garbled Range: ", range[1], " greater than ", range[2], ". Put smallest index first.");
+elseif (0 in range)
+  return tostr("Garbled Range: ", arg);
+endif
+return range;
+.
+
+@verb #124:"get_opt*ion" this none this
+@program #124:get_option
+"-1 == option not found";
+{option, ?player = player} = args;
+opt = `player.inline_editor_options[option] ! ANY => $nothing';
+if (opt != $nothing)
+  return opt;
+else
+  return $edit_utils.default_options[option];
+endif
+.
+
+@verb #124:"options" this none this xd
+@program #124:options
+{?argstr = 0} = args;
+options = {};
+options = {@options, ["name" -> "Set Command Prefix", "identifier" -> "prefix", "state" -> tostr(this:get_option("cmd_char"))]};
+options = {@options, ["name" -> "Set Escape Character", "identifier" -> "escape", "state" -> tostr(this:get_option("escape_char"))]};
+options = {@options, ["name" -> "Advanced Mode (suppresses warnings and help prompts)", "identifier" -> "expert", "state" -> this:get_option("expert")]};
+options = {@options, ["name" -> "Suppress Line Added Notifications", "identifier" -> "suppress", "state" -> this:get_option("no_line_notifies")]};
+options = {@options, ["name" -> "Color Line Numbers", "identifier" -> "color_line", "state" -> ((color = this:get_option("color_line")) != "") ? tostr($ansi_utils:hr_to_code(color), color, "[normal]") | 0]};
+options = {@options, ["name" -> "Color Line Indicator", "identifier" -> "color_indicator", "state" -> ((color = this:get_option("color_indicator")) != "") ? tostr($ansi_utils:hr_to_code(color), color, "[normal]") | 0]};
+options = {@options, ["name" -> "Set As Default Editor For Verbs and Notes", "identifier" -> "default_editor", "state" -> this:get_option("default_editor")]};
+if (player.programmer)
+  options = {@options, ["name" -> "Jump to Error Line", "identifier" -> "jump_to_error", "state" -> this:get_option("jump_to_error")]};
+endif
+opt = $menu_utils:options_menu(options);
+if (opt == 0)
+  return;
+endif
+if (opt == "prefix")
+  player:tell("Enter a single character that you wish to begin editor commands with. It should preferably be a symbol, not a letter or number.");
+  cmd = $command_utils:read();
+  if (((length(cmd) > 1) || (cmd in $string_utils:char_list($string_utils.alphabet + $string_utils.digits))) || (length(cmd) <= 0))
+    return player:tell("Invalid command prefix. It should not be a number or letter and must be one (1) character in length.");
+  endif
+  result = this:set_option(player, "cmd_char", cmd);
+  if (typeof(result) != STR)
+    player:tell("There was an error setting your command prefix.");
+  else
+    player:tell("Command prefix set.");
+  endif
+elseif (opt == "escape")
+  player:tell("Enter a single character that you wish to escape lines with. When lines are started with this character, any editor parsing will be bypassed. It should preferably be a symbol, not a letter or number.");
+  esc = $command_utils:read();
+  if (((length(esc) > 1) || (esc in $string_utils:char_list($string_utils.alphabet + $string_utils.digits))) || (length(esc) <= 0))
+    return player:tell("Invalid escape character. It should not be a number or letter and must be one (1) character in length.");
+  endif
+  result = this:set_option(player, "escape_char", esc);
+  if (typeof(result) != STR)
+    player:tell("There was an error setting your escape character.");
+  else
+    player:tell("Escape character set.");
+  endif
+elseif (opt == "expert")
+  opt = !this:get_option("expert");
+  result = this:set_option(player, "expert", opt);
+  player:tell("You ", opt ? "activate" | "deactivate", " advanced mode.");
+elseif (opt == "suppress")
+  opt = !this:get_option("no_line_notifies");
+  result = this:set_option(player, "no_line_notifies", opt);
+  player:tell(opt ? "You will no longer receive a message when a line has been added to the working text." | "You will once again receive a message when a line has been added to the working text.");
+elseif (opt == "default_editor")
+  opt = !this:get_option("default_editor");
+  result = this:set_option(player, "default_editor", opt);
+  player:tell(opt ? "When editing verbs or notes, you will now use the inline editor by default." | "You will no longer use the inline editor to edit verbs and notes.");
+elseif (opt == "jump_to_error")
+  opt = !this:get_option("jump_to_error");
+  result = this:set_option(player, "jump_to_error", opt);
+  player:tell(opt ? "When editing verbs, the cursor will move to the line indicated in the traceback if an error occurs." | "The cursor will no longer move to the traceback line when errors occur.");
+elseif (opt == "color_line")
+  option = "color_line";
+  status = this:get_option(option);
+  if (((status != "") && ($command_utils:yes_or_no("Would you like to select a different color?") == 1)) || (status == ""))
+    choice = $ansi_utils:color_selector();
+    this:set_option(player, option, choice);
+    player:tell("Color set.");
+  else
+    this:set_option(player, option, "");
+    player:tell("Color cleared.");
+  endif
+elseif (opt == "color_indicator")
+  option = "color_indicator";
+  status = this:get_option(option);
+  if (((status != "") && ($command_utils:yes_or_no("Would you like to select a different color?") == 1)) || (status == ""))
+    choice = $ansi_utils:color_selector();
+    this:set_option(player, option, choice);
+    player:tell("Color set.");
+  else
+    this:set_option(player, option, "");
+    player:tell("Color cleared.");
+  endif
+endif
+.
+
+@verb #124:"log_last_edit" this none this xd
+@program #124:log_last_edit
+{player, task} = args;
+this:refresh_last_edits();
+if (pos = player in $list_utils:slice(this.last_edits))
+  this.last_edits[pos][2] = task;
+  this.last_edits[pos][3] = ftime();
+else
+  this.last_edits = setadd(this.last_edits, {player, task, ftime()});
+endif
+.
+
+@verb #124:"get_last_edit" this none this xd
+@program #124:get_last_edit
+{player} = args;
+return `this.last_edits[player in $list_utils:slice(this.last_edits)][3] ! ANY => 0';
+.
+
+@verb #124:"refresh_last_edits" this none this xd
+@program #124:refresh_last_edits
+edits = this.last_edits;
+"Clear out invalid editor sessions.";
+for x in (edits)
+  if ((!$code_utils:task_valid(x[2])) || (!x[1]:is_listening()))
+    edits = setremove(edits, x);
+  endif
+endfor
+this.last_edits = edits;
+.
+
+@verb #124:"save" this none this xd
+@verb #124:"session_for" this none this xd
+@program #124:session_for
+{player, ?create = 0} = args;
+if (!caller_perms().wizard)
+  return E_PERM;
+endif
+session = 0;
+for x in (this.sessions)
+  if ((x.last_modified != 0) && ((time() - x.last_modified) > $time_utils.week))
+    this.sessions = setremove(this.sessions, x);
+  endif
+  if (x.player == player)
+    return x;
+  endif
+endfor
+if (create)
+  session = $edit_session:new();
+  session.player = player;
+  this.sessions = {@this.sessions, session};
+  return session;
+endif
+return $nothing;
+.
+
+@verb #124:"is_editing" this none this xd
+@program #124:is_editing
+{player} = args;
+return `$code_utils:task_valid(this.last_edits[player in $list_utils:slice(this.last_edits)][2]) ! ANY => 0';
+.
+
+@verb #124:"program_verb" this none this
+@program #124:program_verb
+{object, verbname, state} = args;
+ret = 0;
+try
+  set_task_perms(player);
+  simpleedit = $mcp.registry:match_package("dns-org-mud-moo-simpleedit");
+  if (result = set_verb_code(object, verbname, (typeof(simpleedit) == ERR) ? state.text | simpleedit:verbcode_external_to_internal(state.text)))
+    player:notify_lines(result);
+    player:notify(tostr(length(result), " error(s)."));
+    player:notify("Verb not programmed.");
+    state.traceback = result;
+    line_error = $string_utils:match_string(result[1], "Line *: *");
+    if (line_error != 0)
+      line_error = toint(line_error[1]);
+      state.traceback_line = line_error;
+      if (this:get_option("jump_to_error") && (line_error != 0))
+        if ((line_error > 0) && (line_error <= (length(state.text) + 1)))
+          state.ins = line_error;
+        endif
+      endif
+    endif
+  else
+    player:notify("0 errors.");
+    player:notify(tostr(object, ":", verbname, " successfully compiled."));
+    if ($code_utils:update_last_modified(object, verbname))
+      player:notify("** Time-stamping failed.");
+    endif
+  endif
+except error (ANY)
+  player:notify(error[2]);
+  player:notify("Verb not programmed.");
+endtry
+"Last modified Fri Dec  2 22:22:46 2022 UTC by Saeed (#128).";
+.
+
+@verb #124:"cmd_insert" this none this
+@program #124:cmd_insert
+{state} = args;
+if (!state.arg)
+  (state.ins != 1) ? this:list_line(state, state.ins - 1) | player:tell("____");
+  (state.ins != (state.text:length() + 1)) ? this:list_line(state, state.ins) | player:tell("^^^^");
+else
+  if ((toint(state.arg[1]) < 1) && (state.arg[1] != "$"))
+    player:tell("Insert where? (Use a positive integer or '$' for the last line.)");
+    return E_INVARG;
+  elseif (((state.arg[1] != "$") && (toint(state.arg[1]) <= 0)) || (toint(state.arg[1]) > (length(state.text) + 1)))
+    player:tell("Insertion ranges from line 1 to ", length(state.text) + 1, ".");
+    return E_INVARG;
+  endif
+  if (state.arg[1] == "$")
+    state.ins = length(state.text) + 1;
+  else
+    state.ins = toint(state.arg[1]);
+  endif
+  (state.ins > 1) && this:list_line(state, state.ins - 1);
+  (state.ins <= length(state.text)) && this:list_line(state, state.ins);
+  player:tell("Now inserting before line ", state.ins, ".");
+endif
+.
+
+@verb #124:"cmd_load" this none this
+@program #124:cmd_load
+{state} = args;
+if (this:session_for(player) == $nothing)
+  player:tell("You have no text saved.");
+  return E_INVARG;
+endif
+if (state.text && ($command_utils:yes_or_no("The current text will be lost. Are you sure you wish to load saved text?") == 0))
+  player:tell("Aborted.");
+  return E_INVARG;
+endif
+state.text = this:session_for(player).text;
+player:tell("Saved text loaded.");
+.
+
+@verb #124:"cmd_save" this none this
+@program #124:cmd_save
+{state} = args;
+if (!state.text)
+  player:tell("No text to save.");
+  return E_INVARG;
+endif
+if (this:session_for(player, 1).text && ($command_utils:yes_or_no("You already have text saved. Do you wish to overwrite it?") == 0))
+  player:tell("Aborted.");
+  return E_INVARG;
+endif
+if (!(state.arg in {0, {}}))
+  range = this:parse_range(state.arg, length(state.text), state.ins);
+  if (typeof(range) == STR)
+    player:tell(range);
+    return E_INVARG;
+  endif
+  {start, end} = range;
+  text = state.text[start..end];
+else
+  text = state.text;
+endif
+this:session_for(player, 1).text = text;
+this:session_for(player).last_modified = time();
+player:tell("The text has been successfully saved. To load it in for editing later, type ", this:get_opt("cmd_char"), "paste.");
+.
+
+@verb #124:"cmd_pass" this none this
+@program #124:cmd_pass
+{state} = args;
+passthrough = $string_utils:from_list(state.arg, " ");
+force_input(player, passthrough);
+suspend(0);
+while ($command_utils:reading_input(player) && player:is_listening())
+  yin();
+endwhile
+.
+
+@verb #124:"cmd_reload" this none this
+@program #124:cmd_reload
+text = args[$].text;
+args = args[1..$ - 1];
+player:tell("Reloading...");
+"Maintain text through reloads.";
+if (length(args) >= 1)
+  args[1] = text;
+endif
+return this:editor(@args);
+.
+
+@verb #124:"cmd_changeline" this none this
+@program #124:cmd_changeline
+{state} = args;
+if (length(state.arg) < 2)
+  player:tell("Usage: ", this:get_option("cmd_char"), "", state.command, " <line-number> <new-text>");
+  return E_INVARG;
+elseif (!state.text)
+  player:tell("There is no text to change.");
+  return E_INVARG;
+else
+  if (state.arg[1] == "$")
+    NUM = length(state.text);
+  elseif (state.arg[1] == "^")
+    NUM = state.ins;
+  else
+    NUM = toint(state.arg[1]);
+  endif
+  if ((NUM < 1) || (NUM > length(state.text)))
+    player:tell("There is no line with that number. Lines range from 1 to ", length(state.text), ".");
+    return E_INVARG;
+  else
+    newline = $string_utils:from_list(state.arg[2..$], " ");
+    state.text[NUM] = newline;
+    player:tell("Line ", NUM, " changed.");
+  endif
+endif
+.
+
+@verb #124:"cmd_grep" this none this
+@program #124:cmd_grep
+{state} = args;
+if (!state.text)
+  player:tell("There is no text to search.");
+  return E_INVARG;
+elseif (!state.arg)
+  player:tell("Usage: FIND <text>");
+  return E_INVARG;
+endif
+hohum = (state.ins == (length(state.text) + 1)) ? 1 | state.ins;
+"Note: If the caret is at the bottom, search the full text instead of nothing.";
+found = 0;
+for x in (state.text[hohum..$])
+  if (index(x, hoargs = $string_utils:from_list(state.arg, " ")))
+    found = hohum;
+    break;
+  endif
+  hohum = hohum + 1;
+endfor
+if (!found)
+  player:tell("No text matching `", $string_utils:from_list(state.arg, " "), "'.");
+  return E_INVARG;
+endif
+state.ins = found + 1;
+player:tell(found, ": ", state.text[found]);
+.
+
+@verb #124:"cmd_quit" this none this
+@program #124:cmd_quit
+{state} = args;
+if (state.verb && state.extra)
+  {object, verbname} = state.extra[1];
+  if ((verb_code(object, verbname) != state.text) && ($command_utils:yes_or_no("If you proceed, the text of the working verb could be lost due to failed compilation. Are you sure you wish to continue?") != 1))
+    player:tell("Aborted.");
+    return E_INVARG;
+  endif
+  program = this:program_verb(object, verbname, state);
+endif
+.
+
+@verb #124:"cmd_delete" this none this
+@program #124:cmd_delete
+{state} = args;
+if (!state.text)
+  player:tell("There is no text to delete.");
+else
+  range = this:parse_range(state.arg, length(state.text), state.ins);
+  if (!state.arg)
+    if ((state.ins - 1) <= 0)
+      range = {state.ins, state.ins};
+    else
+      range = {state.ins - 1, state.ins - 1};
+    endif
+  endif
+  if (typeof(range) == STR)
+    player:tell(range);
+    return E_INVARG;
+  endif
+  {start, end} = range;
+  for x in [start..end]
+    player:tell("   ", state.text[start]);
+    state.text = listdelete(state.text, start);
+  endfor
+  state.ins = start;
+  if (state.ins > (length(state.text) + 1))
+    state.ins = length(state.text) + 1;
+  endif
+  player:tell("---Line", (end > start) ? "s" | "", " deleted. Insertion point is before line ", state.ins, ".");
+endif
+.
+
+@verb #124:"cmd_list" this none this
+@program #124:cmd_list
+{state} = args;
+if (!state.text)
+  player:tell("No text to list.");
+  return E_INVARG;
+  "     elseif (!state.arg)";
+  "       player:tell(\"List what lines? (Line ranges from 1 to \", state.ins-1, \".)\");";
+else
+  if (!state.arg)
+    if ((state.ins + 8) > length(state.text))
+      listuntil = length(state.text);
+    else
+      listuntil = state.ins + 8;
+    endif
+    if ((state.ins - 8) <= 0)
+      listfrom = 1;
+    else
+      listfrom = state.ins - 8;
+    endif
+    range = {listfrom, listuntil};
+  elseif (state.arg == {"all"})
+    range = {1, length(state.text)};
+  else
+    range = this:parse_range(state.arg, length(state.text), state.ins);
+    if (typeof(range) == STR)
+      player:tell(range);
+      return E_INVARG;
+    endif
+  endif
+  {start, end} = range;
+  ind = start;
+  "Since we don't want to introduce ANSI into the actual text, we'll create a temp variable.";
+  if (state.verb && ("highlight_syntax" in player.prog_options))
+    list_text = $code_utils:highlight_syntax(state.text[start..end]);
+  else
+    list_text = state.text[start..end];
+  endif
+  for x in (list_text)
+    $command_utils:suspend_if_needed(0);
+    line_color = this:get_opt("color_line");
+    player:tell((line_color != "") ? $ansi_utils:hr_to_code(line_color) | "", ind, (line_color != "") ? "" | "", ": ", (typeof(x) != STR) ? toliteral(x) | x);
+    ind = ind + 1;
+    if (ind == state.ins)
+      ind_color = this:get_opt("color_indicator");
+      player:tell((ind_color != "") ? $ansi_utils:hr_to_code(ind_color) | "", "^^^^", (ind_color != "") ? "" | "");
+    endif
+  endfor
+endif
+.
+
+@verb #124:"cmd_count" this none this
+@program #124:cmd_count
+{state} = args;
+if (((length(state.arg) == 1) && (state.arg[1] in {"line", "lines"})) || (!state.arg))
+  player:tell("Lines: ", length(state.text));
+endif
+if (((length(state.arg) == 1) && (state.arg[1] in {"character", "letters", "chars", "char", "characters"})) || (!state.arg))
+  chars = 0;
+  for x in (state.text)
+    chars = chars + length(x);
+  endfor
+  player:tell("Characters: ", chars);
+endif
+if (((length(state.arg) == 1) && (state.arg[1] in {"word", "words"})) || (!state.arg))
+  words = 0;
+  for x in (state.text)
+    words = words + length($string_utils:words(x));
+  endfor
+  player:tell("Words: ", words);
+endif
+.
+
+@verb #124:"cmd_help" this none this
+@program #124:cmd_help
+{state} = args;
+player:tell("Command Help");
+player:tell(dashes = "-------------");
+cmds = vcmds = {};
+for x in (verb_code(this, "editor"))
+  line = $string_utils:trim(x);
+  if (match = $string_utils:match_string(line, "*f (state.command in {*})"))
+    "cmds = {@cmds, @$string_utils:to_value(match)[2]};";
+    cmds = {@cmds, $string_utils:explode($string_utils:strip_all_but(match[2], $string_utils.alphabet + ",?/"), ",")};
+  elseif (match = $string_utils:match_string(line, "*f (state.command == \"*\")"))
+    cmds = {@cmds, {match[2]}};
+  elseif (match = $string_utils:match_string(line, "elseif (state.verb && state.command == \"*\")"))
+    vcmds = {@vcmds, {match[1]}};
+  elseif (match = $string_utils:match_string(line, "elseif (state.verb && state.command in {*})"))
+    vcmds = {@vcmds, $string_utils:explode($string_utils:strip_all_but(match[1], $string_utils.alphabet + ",?/"), ",")};
+  elseif (match = $string_utils:match_string(line, "elseif (state.verb && state.extra && state.command == \"*\")"))
+    vcmds = {@vcmds, {match[1]}};
+  elseif (match = $string_utils:match_string(line, "elseif (state.verb && state.extra && state.command in {*})"))
+    vcmds = {@vcmds, $string_utils:explode($string_utils:strip_all_but(match[1], $string_utils.alphabet + ",?/"), ",")};
+  endif
+endfor
+ret = {};
+if (!state.arg)
+  ret = {@ret, "Help is available on the following topics:", ""};
+  ret = {@ret, @$string_utils:columnize($list_utils:slice(player.programmer ? {@cmds, @vcmds} | cmds), 3)};
+else
+  for x in ({@cmds, @vcmds})
+    if (((x in vcmds) && ((player.programmer != 1) || (!state.verb))) || (state.arg && ((state.arg[1] in x) == 0)))
+      continue x;
+    endif
+    ret = {@ret, tostr(x[1], "", (length(x) > 1) ? tostr(" (Aliases: ", $string_utils:english_list(x[2..$]), ")") | "", ":")};
+    if (ind = x[1] in $list_utils:slice(this.help))
+      "                ret = {@ret, tostr($list_utils:slice(help, 2)[ind])};";
+      ret = {@ret, @this.help[ind][2..$]};
+    else
+      ret = {@ret, "No help available."};
+    endif
+  endfor
+endif
+if (!ret)
+  ret = {@ret, tostr("No help on that command is presently available. To see a list of commands, type ", this:get_opt("cmd_char", player), "help without arguments.")};
+endif
+player:tell_lines(ret);
+player:tell(dashes);
+if (!state.arg)
+  player:tell();
+  player:tell("To work with ranges, do one of the following:");
+  player:tell("/delete 1..4 -- Erases lines 1 through 4.");
+  player:tell("/delete 8..$ -- Erases up until the end of the text, starting at line 8.");
+  player:tell("/list 3 4 -- Lists lines 3-4.");
+  player:tell("/delete 1 -- Erases line 1.");
+  player:tell("/list 40+40 -- Lists the contents of line 80.");
+endif
+.
+
+@verb #124:"cmd_paste_letter" this none this
+@program #124:cmd_paste_letter
+{state} = args;
+letters = {};
+for x in (player.contents)
+  if (((x != 0) && (isa(x, $note) || isa(x, $letter))) && x:is_readable_by(player))
+    letters = {@letters, x};
+  endif
+endfor
+if (letters == {})
+  player:tell("You are not carrying any notes.");
+else
+  if (length(letters) > 1)
+    player:tell("Pick a note to paste into the working text.");
+    letter = letters[$command_utils:menu(letters)];
+  else
+    letter = letters[1];
+  endif
+  if ($command_utils:yes_or_no(tostr("Really insert the text of ", letter:title(), "?")) == 1)
+    state.text = {@state.text[1..state.ins - 1], @letter:text(), @state.text[state.ins..$]};
+    player:tell("Text inserted.");
+  endif
+endif
+.
+
+@verb #124:"cmd_commentify" this none this
+@program #124:cmd_commentify
+{state} = args;
+if (!state.arg)
+  player:tell("You must include what lines you wish to comment.");
+  return E_INVARG;
+endif
+range = this:parse_range(state.arg, length(state.text), state.ins);
+if (typeof(range) == STR)
+  player:tell(range);
+  return E_INVARG;
+endif
+{start, end} = range;
+for x in [start..end]
+  state.text[x] = ("" + toliteral(state.text[x])) + ";";
+endfor
+player:tell("Line", (end < start) ? "s" | "", " commented.");
+.
+
+@verb #124:"cmd_uncommentify" this none this
+@program #124:cmd_uncommentify
+{state} = args;
+if (!state.arg)
+  player:tell("You must include what lines you wish to uncomment.");
+  return E_INVARG;
+endif
+range = this:parse_range(state.arg, length(state.text), state.ins);
+if (typeof(range) == STR)
+  player:tell(range);
+  return E_INVARG;
+endif
+{start, end} = range;
+bogus = {};
+for x in [start..end]
+  if (((length(state.text[x]) > 3) && (state.text[x][1] == "\"")) && (state.text[x][$ - 1..$] == "\";"))
+    state.text[x] = state.text[x][2..$ - 2];
+  else
+    bogus = {@bogus, state.text[x]};
+  endif
+endfor
+player:tell("Line", (end < start) ? "s" | "", " uncommented.");
+if (bogus)
+  player:tell("---", length(bogus), " ", $s("line", length(bogus)), " ", (start < end) ? "were" | "was", " not comments.");
+endif
+.
+
+@verb #124:"cmd_traceback" this none this
+@program #124:cmd_traceback
+{state} = args;
+if (!state.traceback_line)
+  player:tell("There are no recorded tracebacks.");
+  return E_INVARG;
+else
+  if ((state.traceback_line > 0) && (state.traceback_line <= (length(state.text) + 1)))
+    state.ins = state.traceback_line;
+    player:tell("Insertion point is now at line '", state.ins, "'.");
+  else
+    player:tell("The recorded traceback line is no longer valid.");
+  endif
+endif
+.
+
+@verb #124:"cmd_print_traceback" this none this
+@program #124:cmd_print_traceback
+{state} = args;
+if (!state.traceback)
+  player:tell("There are no recorded tracebacks.");
+  return E_INVARG;
+else
+  player:tell("Last recorded traceback:");
+  player:tell_lines(state.traceback);
+endif
+.
+
+@verb #124:"cmd_format" this none this
+@program #124:cmd_format
+{state} = args;
+if (!state.text)
+  player:tell("No text to format.");
+  return E_INVARG;
+endif
+ind = 1;
+reformatted = {};
+player:tell("Formatting...");
+for x in (state.text)
+  if (length(x) > abs(player:linelen()))
+    player:tell("Line ", ind, " too long: reformatting.");
+    reformatted = {@reformatted, @player:linesplit(x, abs(player:linelen()))};
+  else
+    reformatted = {@reformatted, x};
+  endif
+  ind = ind + 1;
+endfor
+state.text = reformatted;
+player:tell("Done.");
+.
+
+@verb #124:"do_add_line" this none this
+@program #124:do_add_line
+{state, line} = args;
+if (`line[1] == this:get_option("escape_char") ! ANY' && (length(line) > 1))
+  line = line[2..$];
+endif
+if (state.ins > length(state.text))
+  state.text = {@state.text, line};
+else
+  state.text = {@state.text[1..state.ins - 1], line, @state.text[state.ins..$]};
+endif
+(!this:get_option("no_line_notifies")) && player:tell("Line ", state.ins, " added.");
+this:log_last_edit(player, task_id());
+state.ins = state.ins + 1;
+.
+
+@verb #124:"set_option" this none this
+@program #124:set_option
+{player, option, value} = args;
+if (!caller_perms().wizard)
+  return E_PERM;
+endif
+options = player.inline_editor_options;
+if (this.default_options[option] == #-1)
+  return -1;
+endif
+if (options == 0)
+  player.inline_editor_options = [];
+endif
+if ((this.default_options[option] == value) && (option in player.inline_editor_options:keys()))
+  player.inline_editor_options = player.inline_editor_options:delete(option);
+else
+  player.inline_editor_options[option] = value;
+endif
+"Sacrificing sanity checks for tick savings.";
+if (this:get_opt(option, player) == value)
+  return value;
+endif
+return -1;
+.
+
+@verb #124:"cmd_show_clipboard" this none this
+@program #124:cmd_show_clipboard
+{state} = args;
+saved = this:session_for(player, 1);
+if (!saved.text)
+  player:tell("You have no text saved.");
+  return E_INVARG;
+else
+  player:tell("You have the following text saved:");
+  player:tell();
+  player:tell_lines_suspended(saved.text);
+  player:tell();
+  player:tell("(end of saved text)");
+endif
+.
+
+@verb #124:"cmd_localedit" this none this
+@program #124:cmd_localedit
+{state} = args;
+oldoption = this:get_option("default_editor");
+this:set_option(player, "default_editor", 0);
+$verb_editor:invoke((tostr(state.extra[1][1]) + ":") + state.extra[1][2], "@program", state.text);
+this:set_option(player, "default_editor", oldoption);
+kill_task(task_id());
+.
+
+@verb #124:"cmd_replace" this none this
+@program #124:cmd_replace
+{state} = args;
+if (length(state.arg) < 1)
+  player:tell("Usage: ", this:get_option("cmd_char"), "", state.command, " <PCRE replacement>");
+  return E_INVARG;
+elseif (!state.text)
+  player:tell("There is no text to change.");
+  return E_INVARG;
+else
+  changed = 0;
+  success = 1;
+  range = {1, length(state.text)};
+  if ((length(state.arg) >= 2) && (typeof(this:parse_range(state.arg[$], length(state.text), state.ins)) == LIST))
+    range = this:parse_range(state.arg[$], length(state.text), state.ins);
+    player:tell("(Running replacement", (range[1] != range[2]) ? "s" | "", " on ", (range[1] == range[2]) ? "line " + tostr(range[1]) | tostr("lines ", range[1], " to ", range[2]), ".)");
+  endif
+  for I in [range[1]..range[2]]
+    try
+      newline = pcre_replace(state.text[I], $string_utils:from_list(state.arg));
+    except e (ANY)
+      player:tell("Error on line ", I, ": ", e[2]);
+      success = 0;
+      break;
+    endtry
+    if (newline != state.text[I])
+      changed = changed + 1;
+      state.text[I] = newline;
+    endif
+    yin();
+  endfor
+  player:tell("Replacement ", success ? "complete" | "failed", ". ", changed, " ", $s("line", changed), " affected.");
+endif
+.
+
+@verb #124:"init_for_core" this none this
+@program #124:init_for_core
+if (caller_perms().wizard)
+  this.last_edits = {};
+  this.sessions = {};
+  pass(@args);
+endif
+.
+
+@verb #124:"list_line" this none this
+@program #124:list_line
+$ansi_utils:add_noansi();
+{state, line} = args;
+f = 1 + (line in {(ins = state.ins) - 1, ins});
+text = state.text[line];
+player:tell($string_utils:right(line, 3, " _^"[f]), ":_^"[f], " ", text);
+$ansi_utils:remove_noansi();
+.
+
+@verb #124:"cmd_previous cmd_next" this none this rxd #128
+@program #124:cmd_previous
+{state} = args;
+ins = state.ins;
+if (verb == "cmd_previous")
+  newins = ins - 1;
+elseif (verb == "cmd_next")
+  newins = ins + 1;
+endif
+if ((newins < 1) || (newins > (state.text:length() + 1)))
+  player:tell("That would take you out of range (to line ", newins, ").");
+  return E_INVARG;
+else
+  state.ins = newins;
+  if (verb == "cmd_previous")
+    (state.ins != 1) ? this:list_line(state, state.ins - 1) | player:tell("____");
+  elseif (verb == "cmd_next")
+    (state.ins != (state.text:length() + 1)) ? this:list_line(state, state.ins) | player:tell("^^^^");
+  endif
+endif
+.
+
+@prop #124."default_options" ["buffer_external_output" -> 0, "cmd_char" -> "/", "color_indicator" -> "", "color_line" -> "", "default_editor" -> 0, "escape_char" -> "\\", "expert" -> 0, "jump_to_error" -> 0, "no_line_notifies" -> 1] rc
+@prop #124."last_edits" {} c
+;;#124.("last_edits") = {{#128, 1758675754, 1670040849.66916}}
+@prop #124."sessions" {} c
+@prop #124."help" {} rc
+;;#124.("help") = {{"insert", "Change the insertion point."}, {"previous", "Move the insertion point up 1 line."}, {"next", "Move the insertion point down 1 line."}, {"del", "Delete a line or multiple lines using ranges."}, {"pass", "Pass a command through the editor to your character. (For example, '/pass say Hello.' would allow you to say hello while still editing text.)"}, {"list", "View text written so far. To change what is shown, insert at a different line. You can use line ranges with this command. Providing 'all' as an argument will list everything."}, {"abort", "Throw away text."}, {"done", " Same as hitting period (.)."}, {"help", "This help."}, {"find", "Search text from the insertion point onward. Will place the caret on any results located.", "", "If the insertion point is at the very end, it will search from the beginning of the text."}, {"format", "Format lines correctly so they don't go off the screen, based on your linelength preferences."}, {"set", "Change editor options; is a shortcut for the EDIT-OPTIONS command."}, {"spellcheck", "Check the text you've written for spelling errors."}, {"count", "Displays how many <lines|words|characters> are written so far."}, {"import", "Insert the text of a note or letter that's in your hand. (You can only insert notes that you can read.)"}, {"change", "Replace <line-number> with <text>."}, {"tb", "Jump to the line indicated in the last traceback."}, {"ptb", "Print the last traceback."}, {"verb", "Display the verb you're currently editing."}, {"compile", "Send the editor contents to the MOO as code for the currently edited verb. Does NOT close the editor session."}, {"copy", "By default, copies the full text of the buffer to a temporary clipboard. You can optionally specify a range (e.g. COPY 2..5). You can then PASTE it in another edit session."}, {"paste", "Paste copied text."}, {"clipboard", "Review text that's currently on your clipboard."}, {"comment", "Turn a verb line into a comment."}, {"uncomment", "Turn a comment into a line of code."}, {"replace", "Run a Perl Compatible Regular Expressions replacement on the body of the text.", "For information on how PCRE replacements work, check https://www.regular-expressions.info/perl.html"}}
+;;#124.("help_msg") = {"The inline editor is a vastly improved version of the current prompt that accepts multiple lines. It allows for insert and delete operations, text pasting or auto-formatting, as well as spell checking and other functions. ", "", "The editor is highly customizable. To change different aspects of editing, type EDIT-OPTIONS (or simply EDIT-O). For help on the different commands available to you while editing, you can use the HELP command inside the editor. This is accessible by typing your command character, which is a forward slash (/) by default, followed by the word HELP.", "", "Credit goes to:", "", "        - Initially created in 2015 by Victor@Toastsoft.net.", "        - Improved by Lisdude in 2017-2018 in numerous ways."}
+;;#124.("aliases") = {"generic inline editor", "inline editor", "inline", "flexible editor interface utilities", "editor interface utilities", "interface utilities", "utilities", "editor", "interface", "flexible"}
+;;#124.("description") = "This is a placeholder parent for all the $..._utils packages, to more easily find them and manipulate them. At present this object defines no useful verbs or properties. (Filfre.)"
+;;#124.("object_size") = {52489, 1669929999}

@@ -1,0 +1,66 @@
+@create $generic_options named ANSI Options:ANSI Options,ao
+@verb #102:"actual" this none this
+@program #102:actual
+if (args[1] == "all")
+  return {{"colors", a = args[2]}, {"backgrounds", a}, {"extra", a}, {"misc", a}, {"blinking", a}, {"bold", a}, {"ignore", 0}, {"truecolor", a}, {"256", a}};
+elseif (args[1] == "none")
+  return {{"colors", a = !args[2]}, {"backgrounds", a}, {"extra", a}, {"misc", a}, {"blinking", a}, {"bold", a}, {"truecolor", a}, {"256", a}};
+else
+  return {args};
+endif
+.
+
+@verb #102:"show_escape" this none this
+@program #102:show_escape
+if (value = this:get(@args))
+  return {value, {tostr("Send \"", value, "\" for the escape character.")}};
+else
+  return {0, {"Use a character 27 as the escape character."}};
+endif
+.
+
+@verb #102:"parse_escape" this none this
+@program #102:parse_escape
+oname = args[1];
+raw = args[2];
+if (typeof(raw) == STR)
+  return {oname, raw};
+else
+  return "String value expected.";
+endif
+.
+
+@prop #102."show_colors" {} r
+;;#102.("show_colors") = {"Strip out standard 16 color sequences.", "Translate standard 16 color sequences."}
+@prop #102."show_backgrounds" {} rc
+;;#102.("show_backgrounds") = {"Strip out background color sequences.", "Translate background color sequences."}
+@prop #102."show_blinking" {} r
+;;#102.("show_blinking") = {"Do not show blinking sequences.", "Show blinking sequences."}
+@prop #102."show_bold" {} r
+;;#102.("show_bold") = {"Do not show bright colors.", "Send bright colors."}
+@prop #102."show_misc" {} r
+;;#102.("show_misc") = {"Do not send all the other ANSI sequences.", "Send all the other ANSI sequences."}
+@prop #102."show_all" {} r
+;;#102.("show_all") = {"Do not send any ANSI sequences.", "Send all ANSI sequences."}
+@prop #102."show_none" {} r
+;;#102.("show_none") = {"Send all ANSI sequences.", "Do not send any ANSI sequences."}
+@prop #102."type_escape" {} r
+;;#102.("type_escape") = {2}
+@prop #102."show_ignore" {} r
+;;#102.("show_ignore") = {"See 'help ansi-options' for more information.", "Overriding other options and ignoring all ANSI codes."}
+@prop #102."show_no_connect_status" {} r
+;;#102.("show_no_connect_status") = {"Don't show any status messages upon connecting.", "Show status messages about ANSI upon connecting."}
+@prop #102."show_extra" {} r
+;;#102.("show_extra") = {"Do not send extra non-ANSI codes (such as beep).", "Send extra non-ANSI codes (such as beep)."}
+@prop #102."show_truecolor" {} r
+;;#102.("show_truecolor") = {"Strip out 24-bit True Color sequences.", "Translate 24-bit True Color sequences."}
+@prop #102."show_approximate_256" {} rc
+;;#102.("show_approximate_256") = {"24-bit color sequences are not approximated to 8-bit sequences for older clients.", "24-bit color sequences are approximated to 8-bit sequences for older clients."}
+@prop #102."show_256" {} rc
+;;#102.("show_256") = {"Strip out Xterm 256 color sequences.", "Translate Xterm 256 color sequences."}
+;;#102.("names") = {"colors", "blinking", "bold", "misc", "escape", "ignore", "no_connect_status", "extra", "backgrounds", "truecolor", "256"}
+;;#102.("_namelist") = "!colors!blinking!bold!misc!escape!ignore!no_connect_status!extra!backgrounds!truecolor!all!none!256!"
+;;#102.("extras") = {"all", "none"}
+;;#102.("aliases") = {"ANSI Options", "ao"}
+;;#102.("description") = "An option package for controlling and customizing the ANSI PC."
+;;#102.("object_size") = {5739, 1669929999}

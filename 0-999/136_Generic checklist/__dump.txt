@@ -1,0 +1,58 @@
+@create $thing named Generic checklist:Generic checklist
+@verb #136:"@add" any to this rxd
+@program #136:@add
+if (!isa(player, #58))
+  return player:tell("You cannot modify this.");
+endif
+if (!dobjstr)
+  return player:tell(("What would you like to write on " + $string_utils:nn(this)) + "?");
+endif
+this.elements = setadd(this.elements, dobjstr);
+$you:say_action("%N %<adds> something to %T.", player, this);
+.
+
+@verb #136:"@remove" any from this rxd
+@program #136:@remove
+if (!isa(player, #58))
+  return player:tell("You cannot modify this.");
+endif
+element = toint(dobjstr);
+try
+  this.elements = listdelete(this.elements, element);
+except e (ANY)
+  return player:tell(e[2]);
+endtry
+$you:say_action("%N %<erases> something on %T.", player, this);
+.
+
+@verb #136:"@checkoff" any on this rxd
+@program #136:@checkoff
+if (!isa(player, #58))
+  return player:tell("You cannot modify this.");
+endif
+element = toint(dobjstr);
+try
+  this.completed = setadd(this.completed, this.element[element]);
+  this.elements = listdelete(this.elements, element);
+except e (ANY)
+  return player:tell(e[2]);
+endtry
+$you:say_action("%N %<checks> off something on %T.", player, this);
+.
+
+@verb #136:"read" this none none rxd
+@program #136:read
+uncompleted = completed = {};
+for i in (this.elements)
+  uncompleted = {@uncompleted, i};
+endfor
+for i in (this.completed)
+  completed = {@completed, i};
+endfor
+player:tell_lines({"Uncompleted tasks,", @uncompleted, "----", "completed tasks,", @completed});
+.
+
+@prop #136."elements" {} rc
+@prop #136."completed" {} rc
+;;#136.("aliases") = {"Generic checklist"}
+;;#136.("object_size") = {3888, 1669967999}

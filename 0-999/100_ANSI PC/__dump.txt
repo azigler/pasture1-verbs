@@ -1,0 +1,544 @@
+@create $player named ANSI PC:ANSI PC,apc
+@verb #100:"ansi_option" this none this
+@program #100:ansi_option
+":ansi_option(name) => returns the value of the specified @ansi option";
+if ((a = args[1]) == "escape")
+  return (i = $list_utils:assoc(a, this.ansi_options)) ? i[2] | 0;
+else
+  return !(!(a in this.ansi_options));
+endif
+.
+
+@verb #100:"@ansi-o*ptions" any any any
+@program #100:@ansi-options
+"@ansi-option <option> [is] <value>   sets <option> to <value>";
+"@ansi-option <option>=<value>        sets <option> to <value>";
+"@ansi-option +<option>     sets <option>   (usually equiv. to <option>=1";
+"@ansi-option -<option>     resets <option> (equiv. to <option>=0)";
+"@ansi-option !<option>     resets <option> (equiv. to <option>=0)";
+"@ansi-option <option>      displays value of <option>";
+if (!args)
+  player:notify_lines({"Current ANSI options:", "", @$options["ansi"]:show(this.ansi_options, $options["ansi"].names)});
+  return;
+elseif (typeof(presult = $options["ansi"]:parse(args)) == STR)
+  player:notify(presult);
+  return;
+else
+  if (length(presult) > 1)
+    if (typeof(sresult = this:set_ansi_option(@presult)) == STR)
+      player:notify(sresult);
+      return;
+    elseif (!sresult)
+      player:notify("No change.");
+      return;
+    endif
+  endif
+  player:notify_lines($options["ansi"]:show(this.ansi_options, presult[1]));
+endif
+.
+
+@verb #100:"set_ansi_option" this none this
+@program #100:set_ansi_option
+":set_ansi_option(oname,value)";
+"Changes the value of the named option.";
+"Returns a string error if something goes wrong.";
+if (!((caller == this) || $perm_utils:controls(caller_perms(), this)))
+  return tostr(E_PERM);
+endif
+foo_options = "ansi_options";
+"...";
+if (typeof(s = $options["ansi"]:set(this.(foo_options), @args)) == STR)
+  return s;
+elseif (s == this.(foo_options))
+  return 0;
+else
+  this.(foo_options) = s;
+  $ansi_utils:update_player_codes(this);
+  return 1;
+endif
+.
+
+@verb #100:"notify" this none this rx #2
+@program #100:notify
+if (!((caller == this) || $perm_utils:controls(caller_perms(), this)))
+  return E_PERM;
+endif
+line = args[1];
+if (!valid(au = $ansi_utils))
+  return pass(@args);
+elseif (("normal" in ((typeof(z = this.replace_codes) == NUM) ? au.replace_code_pointers[z] | z)) && (!(task_id() in au.noansi_queue)))
+  line = au:terminate_normal(line);
+endif
+if (this.pagelen)
+  if (!(this in connected_players()))
+    "...drop it on the floor...";
+    return 0;
+  endif
+  "...need wizard perms if this and this.owner are different, since...";
+  "...only this can notify() and only this.owner can read .linebuffer...";
+  if ((player == this) && (this.linetask[2] != task_id()))
+    "...player has started a new task...";
+    "....linetask[2] is the taskid of the most recent player task...";
+    (this.linetask[2] != this.linetask[1]) && (this.linesleft = this.pagelen - 2);
+    this.linetask[2] = task_id();
+  endif
+  "... digest the current line...";
+  li = this.linelen ? this:linesplit(line, abs(this.linelen)) | {line};
+  lbuf = {@this.linebuffer, @li};
+  "... print out what we can...";
+  if (this.linesleft)
+    howmany = min(this.linesleft, length(lbuf));
+    for l in (lbuf[1..howmany])
+      au:notify(this, l);
+      "notify(this, l, nocr);";
+    endfor
+    this.linesleft = this.linesleft - howmany;
+    lbuf[1..howmany] = {};
+  endif
+  if (lbuf)
+    "...see if we need to say ***More***";
+    if (this.linetask[1] != this.linetask[2])
+      "....linetask[1] is the taskid of the most recent player task";
+      "...   for which ***More*** was printed...";
+      this.linetask[1] = this.linetask[2];
+      fork (0)
+        notify(this, strsub(this.more_msg, "%n", tostr(length(this.linebuffer))));
+      endfork
+    endif
+    llen = length(lbuf);
+    if (llen > 500)
+      "...way too much saved text, flush some of it...";
+      lbuf[1..llen - 100] = {"*** buffer overflow, lines flushed ***"};
+    endif
+  endif
+  this.linebuffer = lbuf;
+else
+  if (this.linelen > 0)
+    for l in (this:linesplit(line, this.linelen))
+      au:notify(this, l);
+    endfor
+  else
+    au:notify(this, line);
+  endif
+endif
+.
+
+@verb #100:"linesplit" this none this
+@program #100:linesplit
+":linesplit(line,len) => list of substrings of line";
+"used by :notify to split up long lines if .linelen>0";
+line = args[1];
+len = args[2];
+cline = {};
+au = $ansi_utils;
+"..this should eventually return E_RANGE or \"\" and stop...";
+while (z = au:cutoff(line, 1, len + 1))
+  cutoff = au:rindex(z[1..length(z) - 1], " ");
+  if (nospace = cutoff < ((4 * len) / 5))
+    cutoff = len + 1;
+    nospace = index(au:cutoff(line, cutoff, cutoff), " ");
+  endif
+  q = au:cutoff_locs(line, 1, cutoff - 1, 1);
+  cline = {@cline, line[q[1]..q[2]]};
+  line[q[1]..q[2]] = nospace ? " " | "";
+endwhile
+return {@cline, line};
+.
+
+@verb #100:"@ansi-t*est" none none none
+@program #100:@ansi-test
+"Usage:  @ansi-test";
+"Displays a screen that uses all of the ANSI codes possible.  Useful for testing which codes your terminal program is capable of displaying.";
+player:notify($string_utils:center(tostr(" ANSI Test Screen "), l = player:linelen(), "-"));
+player:notify_lines($ansi_utils.test_screen);
+player:notify($string_utils:space(l, "-"));
+.
+
+@verb #100:"set_name" this none this
+@program #100:set_name
+"This makes sure that people don't have color codes in their name. They shouldn't, anyway since it makes it hard to identify them (especially if they use black.)";
+if (!($perm_utils:controls(caller_perms(), this) || (caller == this)))
+  return E_PERM;
+elseif (!is_player(this))
+  "we don't worry about the names of player classes.";
+  return pass(@args);
+elseif ((name = args[1]) != $ansi_utils:delete(name))
+  player:notify("Sorry, you can't have color codes in your name. It messes up the db listings and people might not know how to address you if you didn't have your normal name as an alias. You can make a :title, though.");
+  return E_INVARG;
+else
+  return pass(@args);
+endif
+.
+
+@verb #100:"say" any any any rx
+@program #100:say
+if ($object_utils:has_callable_verb(player.location, "say") != {#3})
+  "Idiot-proofed it against porting wizards who change $room to something other than #3 (since :say would not be defined on $room.) Clueful wizards can change this.";
+  return player.location:(verb)(@args);
+endif
+au = $ansi_utils;
+argstr = au:terminate_normal(argstr);
+action = {"say", "ask", "exclaim"}[1 + index("?!", argstr[length(argstr)])];
+action = (punct == "!") ? "exclaim" | ((punct == "?") ? "ask" | "say");
+player:tell(tostr("You ", action, ", \"", argstr, "\""));
+player.location:announce(tostr(au:ansi_title(player), " ", action), "s, \"", argstr, "\"");
+.
+
+@verb #100:"@who who" any any any rx
+@program #100:@who
+"Redirects calls to @who to $ansi_utils:show_who_listing.";
+if (caller != player)
+  return E_PERM;
+elseif (!(valid(au = $ansi_utils) && au.active))
+  return pass(@args);
+endif
+argstr = prepstr = dobjstr = iobjstr = "";
+plyrs = args ? listdelete($command_utils:player_match_result($string_utils:match_player(args), args), 1) | connected_players();
+au:show_who_listing(plyrs);
+.
+
+@verb #100:"at_item" this none this
+@program #100:at_item
+"'at_item (<location>, <party>)' - Given a location and a list of the people there, return a string displaying the information. Override this if you want to change the format of each line of @at's output.";
+loc = args[1];
+party = args[2];
+su = $string_utils;
+number = this.at_number ? su:right(tostr(loc), 7) + " " | "";
+room = su:left(valid(loc) ? loc.name | "[Nowhere]", this.at_room_width);
+($ansi_utils:length(room) > this.at_room_width) && (room = $ansi_utils:cutoff(room, 1, this.at_room_width));
+text = (number + room) + " ";
+if (party)
+  filler = su:space(length(text) - 2);
+  line = text;
+  text = {};
+  for who in (party)
+    name = " " + (valid(who) ? who.name | "[Nobody]");
+    if (($ansi_utils:length(line) + $ansi_utils:length(name)) > this:linelen())
+      text = {@text, line};
+      line = filler + name;
+    else
+      line = line + name;
+    endif
+  endfor
+  text = {@text, line};
+else
+  text = text + " [deserted]";
+endif
+return text;
+.
+
+@verb #100:"@more" any none none rd #2
+@program #100:@more
+if (player != this)
+  "... somebody's being sneaky...";
+  "... Can't do set_task_perms(player) since we need to be `this'...";
+  "... to notify and `this.owner' to change +c properties...";
+  return;
+elseif (!(valid(au = $ansi_utils) && au.active))
+  return pass(@args);
+elseif (!(lbuf = this.linebuffer))
+  this.linesleft = this.pagelen - 2;
+  notify(this, "*** No more ***");
+elseif (index("flush", dobjstr || "x") == 1)
+  this.linesleft = this.pagelen - 2;
+  notify(this, tostr("*** Flushed ***  ", length(lbuf), " lines"));
+  this.linebuffer = {};
+elseif ((index("rest", dobjstr || "x") == 1) || (!this.pagelen))
+  this.linesleft = this.pagelen - 2;
+  for l in (lbuf)
+    au:notify(this, l);
+  endfor
+  this.linebuffer = {};
+else
+  howmany = min(this.pagelen - 2, llen = length(lbuf = this.linebuffer));
+  for l in (lbuf[1..howmany])
+    au:notify(this, l);
+  endfor
+  this.linesleft = (this.pagelen - 2) - howmany;
+  this.linebuffer = lbuf[howmany + 1..llen];
+  if (howmany < llen)
+    notify(this, strsub(this.more_msg, "%n", tostr(llen - howmany)));
+    this.linetask[1] = task_id();
+  endif
+endif
+this.linetask[2] = task_id();
+.
+
+@verb #100:"set_aliases" this none this
+@program #100:set_aliases
+"This makes sure that people don't have color codes in their aliases. They shouldn't, anyway since it makes it hard to identify them (especially if they use black.)";
+if (!($perm_utils:controls(caller_perms(), this) || (caller == this)))
+  return E_PERM;
+elseif (!is_player(this))
+  "we don't worry about the names of player classes.";
+  return pass(@args);
+else
+  for name in (aliases = args[1])
+    if (name != $ansi_utils:delete(name))
+      aliases = setremove(aliases, name);
+    endif
+  endfor
+  if (aliases != args[1])
+    player:notify("Sorry, you can't have color codes in your aliases.");
+  endif
+  return pass(aliases);
+endif
+.
+
+@verb #100:"title" this none this rx
+@program #100:title
+return valid(au = $ansi_utils) ? au:ansi_title(this, pass(@args)) | pass(@args);
+.
+
+@verb #100:"confunc" this none this
+@program #100:confunc
+if (((valid(cp = caller_perms()) && (caller != this)) && (!$perm_utils:controls(cp, this))) && (caller != #0))
+  return E_PERM;
+else
+  au = $ansi_utils;
+  if (au.active)
+    this:notify(tostr("ANSI Version ", au.version, " is currently active.  Type \"?ansi-intro\" for more information."));
+  endif
+  if (((mess = au.status_message) && (!$object_utils:isa(this, $guest))) && (!this:ansi_option("no_connect_status")))
+    fork (0)
+      line = $string_utils:space((l = this:linelen()) - 2, "*");
+      btmmsg = "Type \"@ansi-o +no_connect_status\" to ignore this message.";
+      this:notify(line);
+      for a in ((typeof(mess) == LIST) ? {"ANSI Message:", @mess, btmmsg} | {"ANSI Message: " + mess, btmmsg})
+        for b in ($generic_editor:fill_string(a, l - 2))
+          this:notify("* " + b);
+        endfor
+      endfor
+      this:notify(line);
+    endfork
+  endif
+  return pass(@args);
+endif
+.
+
+@verb #100:"@ansi-s*tatus" any any any
+@program #100:@ansi-status
+"Usage:";
+"  @ansi-status                   - Displays various information about the";
+"                                   status of the ANSI system.";
+"  @ansi-status version           - Only displays the version number.";
+"  @ansi-status message           - Only displays the ANSI message.";
+"Trusted users only:";
+"  @ansi-status activate          - Activates the ANSI system.";
+"  @ansi-status deactivate        - Deactivates the ANSI system.";
+"  @ansi-status message <message> - Sets the ANSI message to <message>.";
+"  @ansi-status input             - Same as 'message' but lets you input";
+"                                   more than one line.";
+"  @ansi-status clear             - Clears the ANSI message.";
+"  @ansi-status diagnostic        - Runs the ANSI self-diagnostic and";
+"                                   reports the results.";
+"  @ansi-status diagnostic fix    - Same as above but fixes anything it can.";
+"  @ansi-status update            - Updates all the caches, this should be";
+"                                   run every once in a while.  See";
+"                                   'help $ansi_utils:update_all' for more info.";
+au = $ansi_utils;
+if (args)
+  subcommand = args[1];
+  args[1..1] = {};
+else
+  subcommand = "";
+endif
+trusts = au:trusts(player);
+show = 0;
+if (player != this)
+  player:tell(E_PERM);
+elseif (!subcommand)
+  player:notify_lines($ansi_utils:ansi_status());
+  trusts && player:notify("You are trusted by the ANSI system.");
+  show = 1;
+elseif (subcommand == "help")
+  player:notify_lines($code_utils:verb_documentation());
+elseif (subcommand == "version")
+  player:notify(tostr("Currently running ANSI Version ", au.version, "."));
+elseif (subcommand == "message")
+  if (!args)
+    show = 1;
+  elseif (trusts)
+    message = $string_utils:from_list(args, " ");
+    au.status_message = message;
+    player:notify("Message set to:  " + message);
+    if ($command_utils:yes_or_no("Notify users?"))
+      notify = tostr("The ANSI status message was just set by ", player.name, "; type \"@ansi-status message\" to see it.");
+      for x in (setremove($object_utils:leaves_suspended($ansi_pc), player))
+        x:tell(notify);
+      endfor
+    endif
+  else
+    player:notify("The message can only be set by trusted users, type \"@ansi-status message\" to see the message.");
+  endif
+elseif (!trusts)
+  player:notify(tostr("The subcommand \"", subcommand, "\" either doesn't exist or is limited to trusted users only."));
+elseif (subcommand == "input")
+  player:notify("What do you want to set the message to?");
+  message = $command_utils:read_lines();
+  au.status_message = message;
+  player:notify("Message set to:");
+  player:notify_lines(message);
+  if ($command_utils:yes_or_no("Notify users?"))
+    notify = tostr("The ANSI status message was just set by ", player.name, "; type \"@ansi-status message\" to see it.");
+    for x in (setremove($object_utils:leaves_suspended($ansi_pc), player))
+      x:notify(notify);
+    endfor
+  endif
+elseif (subcommand == "clear")
+  au.status_message = "";
+  player:notify("Cleared status message.");
+elseif (subcommand in {"activate", "active", "on"})
+  player:notify(au.active ? "The ANSI system is already active." | "The ANSI system has been activated.");
+  au.active = 1;
+elseif (subcommand in {"deactivate", "deactive", "off"})
+  player:notify(au.active ? "The ANSI system has been deactivated, type \"@ansi-status activate\" to reactivate it." | "The ANSI system is not active.");
+  au.active = 0;
+elseif (subcommand == "diagnostic")
+  status = au:self_diagnostic(fix = index(tostr(@args), "fix"), player);
+  player:notify(tostr("Diagnostic completed, ", fix ? "fixed" | "found", " ", status, " problem", (status == 1) ? "" | "s", "."));
+elseif (subcommand == "update")
+  player:notify("Updating caches...");
+  au:update_all();
+  player:notify("Done updating caches.");
+else
+  player:notify("Invalid subcommand: " + subcommand);
+endif
+if (show)
+  if (m = au.status_message)
+    ml = player:linelen() - 14;
+    lines = {};
+    for a in ((typeof(m) == LIST) ? m | {m})
+      for b in ($generic_editor:fill_string(a, ml))
+        lines = {@lines, b};
+      endfor
+    endfor
+    player:notify("ANSI message: " + lines[1]);
+    for x in (listdelete(lines, 1))
+      player:notify("              " + x);
+    endfor
+  else
+    player:notify("There is no ANSI message set.");
+  endif
+endif
+.
+
+@verb #100:"@ansi-title" any any any
+@program #100:@ansi-title
+"Usage:";
+"  @ansi-title                 - Displays your current ANSI title settings";
+"  @ansi-title <name>          - Displays the title you have set for <name>";
+"  @ansi-title <name> is <new> - Sets <new> as the title for <name>";
+"  @ansi-title is <new>        - Sets <new> as the title for your current name";
+name = dobjstr || this.name;
+if (player != this)
+  player:tell(E_PERM);
+elseif (!argstr)
+  if (typeof(this.ansi_title) != LIST)
+    player:notify("Your ANSI title seems to be screwed up, resetting it.");
+    this:set_ansi_title({});
+  elseif (!this.ansi_title)
+    player:notify("You don't have any ANSI titles set.");
+  else
+    player:notify("Current ANSI title substrings:");
+    l = player:linelen() - 21;
+    for x in (this.ansi_title)
+      z = $generic_editor:fill_string($string_utils:english_list((typeof(x[2]) == LIST) ? x[2] | {x[2]}), l);
+      player:notify(tostr("   ", $string_utils:left(x[1], 15), " - ", z[1]));
+      for i in (listdelete(z, 1))
+        player:notify("                     " + i);
+      endfor
+    endfor
+    player:notify(tostr("Your current name is set to ", $ansi_utils:ansi_title(player), "."));
+  endif
+elseif (iobjstr && (prepstr != "is"))
+  player:notify_lines($code_utils:verb_documentation());
+elseif (!prepstr)
+  if (i = $list_utils:assoc(name, this.ansi_title))
+    player:notify(tostr("The substring ", name, " will be replaced with ", i[2], "."));
+  else
+    player:notify(tostr("There is no set replacement for the substring ", name, "."));
+  endif
+elseif ($ansi_utils:contains_codes(name))
+  player:notify("The replacement string shouldn't contain ANSI codes.");
+else
+  at = this.ansi_title;
+  i = $list_utils:iassoc(name, at);
+  if (iobjstr)
+    if (i)
+      at[i][2] = iobjstr;
+    else
+      at = listappend(at, {name, iobjstr});
+    endif
+  elseif (i)
+    at = listdelete(at, i);
+  endif
+  if (typeof(result = this:set_ansi_title(at)) != ERR)
+    if (iobjstr)
+      player:notify(tostr("Substring ", name, " will be replaced with ", iobjstr, "."));
+    else
+      player:notify(tostr("Cleared substring ", name, "."));
+    endif
+  elseif (result == E_NACC)
+    player:notify("The replacement string must be the same as the string replaced except for the ANSI strings.");
+  else
+    player:notify(tostr("Error: ", result));
+  endif
+endif
+.
+
+@verb #100:"set_ansi_title" this none this
+@program #100:set_ansi_title
+":set_ansi_title (LIST title_list)";
+tl = args[1];
+if ((caller != this) && (!$perm_utils:controls(caller_perms(), this)))
+  return E_PERM;
+elseif (typeof(tl) != LIST)
+  return E_INVARG;
+else
+  au = $ansi_utils;
+  for x in [1..length(tl)]
+    if (!(((typeof(tl[x]) == LIST) && (length(tl[x]) == 2)) && (typeof(tl[x][1]) == STR)))
+      return E_INVARG;
+    elseif (typeof(tl[x][2]) == LIST)
+      for y in [1..length(tl[x][2])]
+        if (typeof(tl[x][2][y]) != STR)
+          return E_INVARG;
+        elseif (tl[x][1] != strsub(au:delete(tl[x][2][y]), " ", "_"))
+          return E_NACC;
+        else
+          tl[x][2][y] = au:terminate_normal(tl[x][2][y]);
+        endif
+      endfor
+    elseif (tl[x][1] != strsub(au:delete(tl[x][2]), " ", "_"))
+      return E_NACC;
+    else
+      tl[x][2] = au:terminate_normal(tl[x][2]);
+    endif
+  endfor
+  this.ansi_title = tl;
+endif
+.
+
+@verb #100:"oemote" any any any rx
+@program #100:oemote
+if ($object_utils:has_callable_verb(player.location, "say") != {#3})
+  "Idiot-proofed it against porting wizards who change $room to something other than #3 (since :say would not be defined on $room.) Clueful wizards can change this.";
+  return player.location:(verb)(@args);
+endif
+if (argstr && (argstr[1] == ":"))
+  argstr[1..1] = "";
+else
+  argstr[1..0] = " ";
+endif
+player.location:announce_all($ansi_utils:ansi_title(player), argstr);
+.
+
+@prop #100."ansi_options" {} r
+;;#100.("ansi_options") = {"no_connect_status", "extra", "misc", "backgrounds", "bold", "colors"}
+@prop #100."ansi_title" {} r
+@prop #100."replace_codes" {} r
+;;#100.("help") = #101
+;;#100.("aliases") = {"ANSI PC", "apc"}
+;;#100.("description") = "A player with the ability to see things in [red]c[bold][yellow]o[green]l[blue]o[purple]r[normal]."
+;;#100.("object_size") = {29845, 1669929999}

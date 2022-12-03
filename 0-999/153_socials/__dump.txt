@@ -1,0 +1,46 @@
+@create $root_class named socials:socials
+@verb #153:"match_social" this none this
+@program #153:match_social
+{match, ?string = 0} = args;
+"the following line checks if string is 1, send a string of the matched social name back(this always picks the first element). Otherwise, send a map of the social back. If nothing was found, or there was an error, send 0.";
+res = {};
+for i in (mapkeys(this.socials))
+  if (index(i, match) == 1)
+    if (string == 1)
+      res = res:add(i);
+    else
+      res = this.socials[i];
+      break;
+    endif
+  endif
+endfor
+return res;
+.
+
+@verb #153:"format_social" this none this
+@program #153:format_social
+{pov, socialmsg, ?target = 0} = args;
+"pov can be one of";
+"self(untargetted)";
+"publicmsg(untargetted room)";
+"selftarget(the message you see when you perform a social on a target)";
+"publictarget(the message displayed to everyone when done on a target),";
+"target(the message the target will see),";
+"targetself(What you see when the social is targeted on yourself), ";
+"publictargetself(the message everyone sees when you target yourself).";
+if (pov == "selftarget")
+  return $string_utils:pronoun_sub($string_utils:substitute(socialmsg, {{"%N", "you"}, {"%his", target.pp}, {"%him", target.po}, {"himself", target.pr}}), player, target);
+elseif ((pov == "publictarget") || (pov == "publictargetself"))
+  return $string_utils:pronoun_sub($string_utils:substitute(socialmsg, {{"%his", target.pp}, {"%him", target.po}, {"himself", target.pr}}), player, target);
+elseif ((pov == "self") || (pov == "targetself"))
+  return $string_utils:pronoun_sub($string_utils:substitute(socialmsg, {{"%N", "you"}, {"%his", "your"}, {"%him", "you"}, {"%himself", "yourself"}}), player, target);
+elseif (pov == "target")
+  return $string_utils:pronoun_sub($string_utils:substitute(socialmsg, {{"%his", "your"}, {"%him", "you"}, {"%himself", "yourself"}}), player, target);
+else
+  return (target == 0) ? $string_utils:pronoun_sub(socialmsg, this) | $string_utils:pronoun_sub(socialmsg, player, target);
+endif
+.
+
+@prop #153."socials" ["nod" -> ["category" -> {}, "publicmsg" -> "%N %<nods>.", "publictargetmsg" -> "%N %<nods>.", "publictargetselfmsg" -> "%N %<nods>.", "selfmsg" -> "%N %<nods>.", "selftargetmsg" -> "%N %<nods>.", "targetmsg" -> "%N %<nods>.", "targetselfmsg" -> "%N %<nods>."], "peckstorm" -> ["category" -> {"physical", "auditory", "vocal", "visual"}, "publicmsg" -> "%n calls down a swarm of chickens from the heavens. In a furious rampage, they begin to peck at everything around them, ... including you.", "publictargetmsg" -> "%n chants an invocation to summon the ancient chicken overlords. A few moments later, %p call is answered as a swarm of angrily clucking bodies fall from the sky and crash into %t, before proceeding to peck %him to death.", "publictargetselfmsg" -> "%N calls down a swarm of angry chickens to strike %o down. As thousands of giant black bodies descend from the sky, they rip and tear at %p body to shreads.", "selfmsg" -> "you summon a swarm of chickens, which furiously descend down from the heavens to peck your foes.", "selftargetmsg" -> "You chant an invocation to summon the ancient chicken overlords. A few moments later, your call is answered as a swarm of angrily clucking bodies fall from the sky and crash into %t, before proceeding to peck %him to death.", "targetmsg" -> "%n chants an invocation to summon the ancient chicken overlords. A few moments later, %p call is answered as a swarm of angrily clucking bodies fall from the sky and crash into you. Searing pain explodes all along your body as your vision slowly fades to black. Perhaps you should have made greater sacrifices to the glorious chicken ancestry.", "targetselfmsg" -> "You Call Down A Swarm Of Angry Chickens To Strike You Down. Your vision is blotted out as thousands of angry bodies descend from the sky. Hot White Pain Travels Through Your Body As Deafening Clucks Assault Your Ears. It is the last sound you hear before you are sucked into the void..."]] rc
+;;#153.("aliases") = {"socials"}
+;;#153.("object_size") = {0, 0}

@@ -1,0 +1,41 @@
+@create $root_class named Generic Gendered Object:Generic Gendered Object
+@verb #94:"set_gender" this none this
+@program #94:set_gender
+"set_gender(newgender) attempts to change this.gender to newgender";
+"  => E_PERM   if you don't own this or aren't its parent";
+"  => Other return values as from $gender_utils:set.";
+if (!($perm_utils:controls(caller_perms(), this) || (this == caller)))
+  return E_PERM;
+else
+  result = $gender_utils:set(this, args[1]);
+  this.gender = (typeof(result) == STR) ? result | args[1];
+  return result;
+endif
+.
+
+@verb #94:"verb_sub" this none this
+@program #94:verb_sub
+"Copied from generic player (#6):verb_sub by ur-Rog (#6349) Fri Jan 22 11:20:11 1999 PST";
+"This verb was copied by TheCat on 01/22/99, so that the generic gendered object will be able to do verb conjugation as well as pronoun substitution.";
+text = args[1];
+if (a = `$list_utils:assoc(text, this.verb_subs) ! ANY')
+  return a[2];
+else
+  return $gender_utils:get_conj(text, this);
+endif
+.
+
+@prop #94."gender" "neuter" rc
+@prop #94."pqc" "its" rc
+@prop #94."pq" "its" rc
+@prop #94."ppc" "Its" rc
+@prop #94."pp" "its" rc
+@prop #94."prc" "Itself" rc
+@prop #94."pr" "itself" rc
+@prop #94."poc" "It" rc
+@prop #94."po" "it" rc
+@prop #94."psc" "It" rc
+@prop #94."ps" "it" rc
+@prop #94."verb_subs" {} rc
+;;#94.("aliases") = {"Generic Gendered Object"}
+;;#94.("object_size") = {3044, 1669929999}

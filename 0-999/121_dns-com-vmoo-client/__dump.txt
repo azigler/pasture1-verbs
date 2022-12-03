@@ -1,0 +1,97 @@
+@create #104 named dns-com-vmoo-client:dns-com-vmoo-client
+@verb #121:"handle_info" this none this
+@program #121:handle_info
+if (caller != this)
+  return E_PERM;
+endif
+{session, @stats} = args;
+who = session.connection;
+if (i = who in $list_utils:slice(this.client_info, 2))
+  this.client_info = listset(this.client_info, {time(), who, stats}, i);
+else
+  this.client_info = {@this.client_info, {time(), who, stats}};
+endif
+.
+
+@verb #121:"handle_screensize" this none this
+@program #121:handle_screensize
+{session, linelen, @args} = args;
+if (caller != this)
+  return E_PERM;
+endif
+((ll = toint(linelen)) > 0) && this:adjust_linelen(who = session.connection, (who.linelen > 0) ? ll | (-1 * ll));
+.
+
+@verb #121:"init_for_core" this none this
+@program #121:init_for_core
+if ($perm_utils:controls(caller_perms(), this))
+  this.client_info = {};
+endif
+.
+
+@verb #121:"send_disconnect" this none this
+@program #121:send_disconnect
+{who, @args} = args;
+if ($perm_utils:controls(caller_perms(), who))
+  if (valid(session = $mcp:session_for(who)) && session:handles_package(this))
+    return pass(session, @args);
+  else
+    return E_INVIND;
+  endif
+endif
+.
+
+@verb #121:"get_client_info" this none this
+@program #121:get_client_info
+if (!$perm_utils:controls(caller_perms(), this))
+  return E_PERM;
+else
+  info = {};
+  for dude in (args)
+    if (i = $list_utils:iassoc(dude, this.client_info, 2))
+      (ticks_left() < 4000) && suspend(0);
+      dudeinf = this.client_info[i];
+      session = $mcp:session_for(dudeinf[2]);
+      if ((valid(session) && session:handles_package(this)) && `dudeinf[1] >= (dude.last_connect_time - 3) ! ANY')
+        info = {@info, dudeinf[2..3]};
+      endif
+    endif
+  endfor
+  return info;
+endif
+.
+
+@verb #121:"adjust_linelen" this none this rxd #2
+@program #121:adjust_linelen
+{who, linelen} = args;
+if (caller != this)
+  return E_PERM;
+endif
+who.linelen = linelen;
+.
+
+@verb #121:"prune_client_info" this none this
+@program #121:prune_client_info
+{clients, users} = this.client_stats;
+for x in (this.client_info)
+  if (is_player(x[2]) == 0)
+    if ((ind = x[3][1] in clients) == 0)
+      clients = {@clients, x[3][1]};
+      users = {@users, 1};
+    else
+      users[ind] = users[ind] + 1;
+    endif
+    this.client_info = setremove(this.client_info, x);
+  endif
+  $command_utils:suspend_if_needed(0);
+endfor
+this.client_stats = {clients, users};
+.
+
+@prop #121."client_info" {} ""
+;;#121.("client_info") = {{1670034762, #2, {"Atlantis", "0.9.9.8", "106"}}, {1550351436, #98, {"wxpymoo", "0.2", "0.2"}}, {1670038585, #129, {"blightmud", "5.0.0", "0"}}, {1669967401, #139, {"RMOO (Emacs)", "1.3b", "0"}}}
+@prop #121."client_stats" {} rc
+;;#121.("messages_in") = {{"screensize", {"cols", "rows"}}, {"info", {"name", "text-version", "internal-version"}}}
+;;#121.("messages_out") = {{"disconnect", {"reason"}}}
+;;#121.("aliases") = {"dns-com-vmoo-client"}
+;;#121.("object_size") = {6665, 1669929999}

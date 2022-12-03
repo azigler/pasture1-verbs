@@ -1,0 +1,36 @@
+@create #104 named mcp-negotiate:mcp-negotiate,negotiate
+@verb #105:"do_negotiation" this none this
+@program #105:do_negotiation
+connection = caller;
+for keyval in ($mcp.registry:packages())
+  {name, package} = keyval;
+  this:send_can(connection, name, @package.version_range);
+endfor
+this:send_end(connection);
+.
+
+@verb #105:"handle_can" this none this
+@program #105:handle_can
+if (caller == this)
+  {connection, package, minv, maxv, @rest} = args;
+  if (valid(pkg = $mcp.registry:match_package(package)))
+    if (version = $mcp:compare_version_range({minv, maxv}, pkg.version_range))
+      connection:add_package(pkg, version);
+    endif
+  endif
+endif
+.
+
+@verb #105:"handle_end" this none this
+@program #105:handle_end
+if (caller == this)
+  {connection, @rest} = args;
+  connection:end_negotiation();
+endif
+.
+
+;;#105.("version_range") = {"1.0", "2.0"}
+;;#105.("messages_in") = {{"can", {"package", "min-version", "max-version"}}, {"end", {}}}
+;;#105.("messages_out") = {{"can", {"package", "min-version", "max-version"}}, {"end", {}}}
+;;#105.("aliases") = {"mcp-negotiate", "negotiate"}
+;;#105.("object_size") = {3348, 1669929999}

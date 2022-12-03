@@ -1,0 +1,5 @@
+@create $exit named office:office,o
+;;#159.("source") = #62
+;;#159.("dest") = #158
+;;#159.("aliases") = {"office", "o"}
+;;#159.("object_size") = {0, 0}

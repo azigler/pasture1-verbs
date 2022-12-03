@@ -1,0 +1,40 @@
+@create $generic_utils named Basic SQLite Interface Utilities:Basic SQLite Interface Utilities
+@verb #156:"open" this none this
+@program #156:open
+":open(STR <database name>[, INT <options>])";
+"Return an SQLite handle for the given database name.";
+{database, ?bitmask = 0} = args;
+path = this:build_path(database);
+handle = `this.open[path] ! E_RANGE';
+if (((handle != E_RANGE) && (handle in sqlite_handles())) && (sqlite_info(handle)["path"] == tostr(this.ignored_path, path)))
+  return handle;
+else
+  to_pass = bitmask ? {path, bitmask} | {path};
+  handle = sqlite_open(@to_pass);
+  this.open[path] = handle;
+  after_connect = `this.after_connect_commands[path] ! E_RANGE';
+  if (after_connect != E_RANGE)
+    for x in (after_connect)
+      sqlite_query(handle, x);
+    endfor
+  endif
+  return handle;
+endif
+.
+
+@verb #156:"build_path" this none this
+@program #156:build_path
+":build_path([STR <database name>])";
+"Return the filesystem path for databases.";
+"If <database name> is provided, it will be appended to the end of the path.";
+{?database = 0} = args;
+return tostr(this.path, (database != 0) ? "/" + database | "");
+.
+
+@prop #156."open" ["databases/chaosmoo_notes.sqlite" -> 1] rc
+@prop #156."ignored_path" "files/" rc
+@prop #156."path" "databases" rc
+@prop #156."after_connect_commands" [] rc
+;;#156.("aliases") = {"Basic SQLite Interface Utilities"}
+;;#156.("description") = "This is a placeholder parent for all the $..._utils packages, to more easily find them and manipulate them. At present this object defines no useful verbs or properties. (Filfre.)"
+;;#156.("object_size") = {0, 0}

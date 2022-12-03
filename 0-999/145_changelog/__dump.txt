@@ -1,0 +1,77 @@
+@create $thing named changelog:changelog
+@verb #145:"add" this none this
+@program #145:add
+if (!args)
+  return 0;
+endif
+{adding} = args;
+"date will equal month.day.year.";
+date = #43:time_sub("$1.$3.$Y");
+"Does the date exist in the entries map? if not, add it.";
+if (!maphaskey(this.entries, date))
+  this.entries[date] = {};
+endif
+"is the adding item a list? if so, add it element by element so there won't be 2 lists in the entries map. otherwise, just dump it in cause it's a string.";
+if (typeof(adding) == LIST)
+  for i in (adding)
+    this.entries[date] = setadd(this.entries[date], (i + ": ") + $time_utils:time_sub("$H:$M:$S"));
+  endfor
+else
+  this.entries[date] = setadd(this.entries[date], (adding + ": ") + $time_utils:time_sub("$H:$M:$S"));
+endif
+return 1;
+.
+
+@verb #145:"edit remove" this none this
+@program #145:edit
+if (!this.entries)
+  return player:tell("There are no entries to modify.");
+endif
+player:tell("Which date was the target text posted?");
+menu = mapkeys(this.entries)[1..this:entries_to()];
+choice = $menu_utils:menu(menu);
+"date = menu[choice];";
+if (!this.entries[date = menu[choice]])
+  return player:tell("There are no entries within this date.");
+endif
+player:tell("Which would you like to modify?");
+menu = this.entries[date];
+entry = $menu_utils:menu(menu);
+if ($command_utils:yes_or_no(((((("Are you sure you would like to " + verb) + " this entry (") + this.entries[date][entry]) + ", posted on ") + date) + "?"))
+  if (verb == "remove")
+    this.entries[date] = listdelete(this.entries[date], entry);
+  elseif (verb == "edit")
+    newtext = $command_utils:read("replacement text,");
+    this.entries[date][entry] = newtext;
+  endif
+else
+  return player:tell("Aborted.");
+endif
+return 1;
+.
+
+@verb #145:"entries_to" this none this
+@program #145:entries_to
+if (length(mapkeys(this.entries)) >= 5)
+  return 5;
+else
+  return length(this.entries);
+endif
+.
+
+@verb #145:"read" this none this
+@program #145:read
+{?to = 5} = args;
+if (to >= length(mapkeys(this.entries)))
+  to = this:entries_to();
+endif
+ret = {};
+for i in (mapkeys($changelog.entries)[1..to]:reverse())
+  ret = {@ret, @{i + ":", @$changelog.entries[i]}};
+endfor
+return ret;
+.
+
+@prop #145."entries" ["12.02.2022" -> {"Changelog created.(caranov)", "Small following system made for playerclassed objects.(caranov)", "Added @vsearch and @psearch for searching verbs / properties by name. ((lisdude)", "Added @status*-all for retrieving boring technical details about the MOO. ((lisdude)", "Socials have been implimented. All ways to modify them are listed in help me:newsocial and help me:rmsocial. (caranov)", "[$edit_utils:cmd_previous/cmd_next] Added to move up and down 1 line in the editor, respectively. This also means that `p' is no longer an alias for `list' and now corresponds to `previous'. (Saeed)", "The @socials command now exists. If no arguments are provided, it lists all socials. Otherwise, it searches for socials matching the provided string. (caranov)", "[$edit_utils:cmd_localedit] Replaced nonexistent option reference with \"default_editor\". (Saeed)", "[$edit_utils:cmd_save] Disallow saving if the editor is devoid of text. (Saeed)", "[$edit_utils:cmd_insert] Print the line above and below the insertion point when used with no arguments, similar to the LambdaCore editor. (Saeed)", "Added a notetaking feature. '@add-feature $notes_feature' and '@notes help' for details. (lisdude)", "Fixed #154:@tags to point to $ansi_utils:color_selector instead of color_select (since the ladder doesn't exist in ToastCore). (Saeed): 21:35:45", "emoting has been redone. matching can be done with the at(@) symbol(although it is not very effective until matching is recoded to be much better). You can use @me for your name, @my for his/hers. Using 's for the begining of the emote will be taken into consideration, so it will appear smoothly. (caranov): 21:36:14", "Added basic timestamping to verb edits. (Saeed): 22:23:25", "Added the (sure to be exciting) `config' argument to @VERSION. Thanks, Lisdude. (Saeed): 23:16:14"}, "12.03.2022" -> {"Added PEER [direction] to look in [direction] before going to the monumental effort of actually walking there. (lisdude): 02:52:58", "Added integration message support for objects when LOOKing in a room. The basic usage consists of setting the .look_contents_msg property of the object in question (currently only defined on $thing since most virtual reality items typhically descend from that), and relies on a :look_contents_msg verb to handle pronoun substitutions and all that fun stuff. People looking to extend integration messages to be more interesting can override this verb on their own objects.", "Updated @LIST to display a verb's last modified timestamp (if any) prior to printing the verb's code. (Saeed): 03:47:52"}] rc
+;;#145.("aliases") = {"changelog"}
+;;#145.("object_size") = {0, 0}

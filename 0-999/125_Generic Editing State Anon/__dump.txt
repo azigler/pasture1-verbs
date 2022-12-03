@@ -1,0 +1,22 @@
+@create $anon named Generic Editing State Anon
+@verb #125:"new" this none this
+@program #125:new
+{text, verb, extra, @overflow} = args;
+new = pass(player);
+new.text = text;
+new.verb = verb;
+new.extra = extra;
+return new;
+.
+
+@prop #125."text" {} rc
+@prop #125."cursor" 0 rc
+@prop #125."error_line" 0 rc
+@prop #125."verb" 0 rc
+@prop #125."extra" 0 rc
+@prop #125."ins" 0 rc
+@prop #125."command" 0 rc
+@prop #125."arg" 0 rc
+@prop #125."verb_name" 0 rc
+@prop #125."traceback" 0 rc
+@prop #125."traceback_line" 0 rc

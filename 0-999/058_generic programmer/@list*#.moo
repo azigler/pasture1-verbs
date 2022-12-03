@@ -117,6 +117,14 @@ for what in ({object, @$object_utils:ancestors(object)})
       if (code == {})
         player:notify("(That verb has not been programmed.)");
       else
+        if (`code[$][1..14] ! ANY => ""' == "\"Last modified")
+          player:notify(code[$][2..$ - 2]);
+          l = length(code);
+          while (`code[l][1..14] ! ANY => ""' == "\"Last modified")
+            code = listdelete(code, l);
+            l = l - 1;
+          endwhile
+        endif
         lineseq = {1, length(code) + 1};
         range && (lineseq = $seq_utils:intersection(range, lineseq));
         if (!lineseq)
@@ -144,3 +152,4 @@ endfor
 if (!shown_one)
   player:notify(tostr("That object does not define that verb", argspec ? " with those args." | "."));
 endif
+"Last modified Sat Dec  3 03:45:04 2022 UTC by Saeed (#128).";

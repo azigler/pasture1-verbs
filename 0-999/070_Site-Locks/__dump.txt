@@ -1,0 +1,19 @@
+@create $mail_recipient named Site-Locks:Site-Locks
+@verb #70:"init_for_core" this none this
+@program #70:init_for_core
+if (caller_perms().wizard)
+  pass(@args);
+  this.mail_notify = {player};
+  player:set_current_message(this, 0, 0, 1);
+  this.moderated = 1;
+else
+  return E_PERM;
+endif
+.
+
+;;#70.("moderated") = 1
+;;#70.("mail_notify") = {#2}
+;;#70.("mail_forward") = {}
+;;#70.("aliases") = {"Site-Locks"}
+;;#70.("description") = "Notes on annoying sites."
+;;#70.("object_size") = {1864, 1669929999}

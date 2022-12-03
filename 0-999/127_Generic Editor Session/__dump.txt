@@ -1,0 +1,4 @@
+@create $anon named Generic Editor Session
+@prop #127."last_modified" 0 rc
+@prop #127."player" 0 rc
+@prop #127."text" {} rc

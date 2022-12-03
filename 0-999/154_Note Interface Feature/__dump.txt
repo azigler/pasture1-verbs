@@ -1,0 +1,259 @@
+@create $feature named Note Interface Feature:Generic Note Interface Feature,Note,Interface,Feature,Note Interface Feature,Interface Feature,Generic
+@verb #154:"@tags" any any any rxd
+@program #154:@tags
+if (args)
+  if (argstr == "")
+    return player:tell("Empty strings can't be tags.");
+  else
+    choice = this.utils:add_tag(argstr);
+  endif
+else
+  tags = this.utils:all_tags();
+  if (!tags)
+    return player:tell("There are no tags. You can add one by typing: @tag <tag name>");
+  else
+    tag_menu = {};
+    for x in (tags)
+      tag_menu = {@tag_menu, this.utils:display_tag(x)};
+    endfor
+    player:tell("Which tag do you want to modify?");
+    choice = tags[$menu_utils:menu(tag_menu)];
+  endif
+endif
+player:tell("Tag: ", this.utils:display_tag(choice));
+player:tell("Tag ID: ", choice);
+tag_menu = {"Delete Tag", "Change Tag Color"};
+opt = tag_menu[$menu_utils:menu(tag_menu)];
+if (opt == "Delete Tag")
+  if ($command_utils:yes_or_no("Are you sure you want to delete this tag?") == 1)
+    this.utils:delete_tag(choice);
+    player:tell("Deleted.");
+  else
+    player:tell("Aborted.");
+  endif
+elseif (opt == "Change Tag Color")
+  name = $ansi_utils:delete(this.utils:display_tag(choice));
+  player:tell("Choose a new color:");
+  color = $ansi_utils:color_selector();
+  if ($command_utils:yes_or_no(tostr("Does this look correct: ", $ansi_utils:hr_to_code(color), name, "[normal]")) == 1)
+    player:tell("Color changed.");
+    this.utils:add_tag(name, color);
+  else
+    player:tell("Aborted.");
+  endif
+endif
+.
+
+@verb #154:"@all-notes" none none none rxd
+@program #154:@all-notes
+this.utils:print_category_tree_with_notes();
+.
+
+@verb #154:"@note-o*ptions" any any any rxd
+@program #154:@note-options
+"View and set options pertinent to the note feature.";
+"Each option should have the keys: Name, help_msg, add_msg, and remove_msg.";
+options = [];
+options["debug"] = ["name" -> "Debug Mode", "help_msg" -> "Toggles the display of certain debugging information, such as note and folder IDs displayed beside their names.", "remove_msg" -> "You will no longer see debug information.", "add_msg" -> "You will now see debug information."];
+options["full_tree"] = ["name" -> "Show Entire Tree At Once", "help_msg" -> "When enabled, you will see the entire hierarchy at one time. This means every branch of every folder and sub-folder and their notes.", "remove_msg" -> "You will no longer see the entire hierarchy when viewing notes.", "add_msg" -> "You will now see the entire hierarchy when viewing notes."];
+options["show_all_occurances"] = ["name" -> "Show All Referenced Note Folders", "help_msg" -> "It's possible for a single note to exist in multiple folders. When searching for notes, this option controls whether you'll see every instance of a single note in each of its folders or if you will only see each unique note one time.", "add_msg" -> "You will now see every occurance of a note in search results.", "remove_msg" -> "You will now only see unique notes once in search results."];
+options["announce_notes"] = ["name" -> "Announce Changes to Notes", "help_msg" -> "You'll receive a notification any time somebody adds, deletes, or edits a note.", "add_msg" -> "You will now receive notifications when people add, delete, or edit notes.", "remove_msg" -> "You will no longer receive notifications when people add, delete, or edit notes."];
+if (!maphaskey(this.utils.options, player))
+  this.utils.options[player] = {};
+endif
+menu = option_names = {};
+on = "[[green]On[normal]]";
+off = "[[red]Off[normal]]";
+count = 0;
+current_options = this.utils.options[player];
+for value, key in (options)
+  count = count + 1;
+  property = maphaskey(value, "property") ? player.(value["property"]) | current_options;
+  menu = {@menu, {tostr("[", count, "]"), value["name"], (key in property) ? on | off}};
+  "Option_names for :options_menu to search through.";
+  option_names = {@option_names, value["name"]};
+endfor
+"Grab the list of keys so we can match a number to a key.";
+keys = mapkeys(options);
+while (1)
+  if (!argstr)
+    player:tell_lines($string_utils:autofit(menu));
+    player:tell();
+    player:tell("Enter your selection. If you need help, type `HELP <option number>' to get more information.");
+    choice = $command_utils:read();
+  else
+    choice = argstr;
+  endif
+  words = explode(choice);
+  if (words == {})
+    return player:tell("Invalid selection.");
+  elseif (words[1] in {"help", "?"})
+    option = toint(words[2]);
+    if ((option <= 0) || (option > length(options)))
+      player:tell("Invalid option.");
+    else
+      option = keys[option];
+      player:tell(options[option]["name"], ": ", options[option]["help_msg"]);
+      suspend(0.5);
+      player:tell();
+    endif
+  else
+    if ($string_utils:is_numeric(choice))
+      choice = toint(choice);
+      if ((choice <= 0) || (choice > length(options)))
+        return player:tell("Invalid selection.");
+      else
+        result = choice;
+      endif
+    else
+      result = $menu_utils:options_menu(option_names, choice);
+      if (result == 0)
+        return;
+      endif
+    endif
+    option = keys[result];
+    if (maphaskey(options[option], "property"))
+      property = options[option]["property"];
+      if (option in player.(property))
+        player:tell(options[option]["remove_msg"]);
+        player.(property) = setremove(player.(property), option);
+      else
+        player:tell(options[option]["add_msg"]);
+        player.(property) = setadd(player.(property), option);
+      endif
+    else
+      if (option in this.utils.options[player])
+        player:tell(options[option]["remove_msg"]);
+        this.utils.options[player] = setremove(this.utils.options[player], option);
+      else
+        player:tell(options[option]["add_msg"]);
+        this.utils.options[player] = setadd(this.utils.options[player], option);
+      endif
+    endif
+    return;
+  endif
+endwhile
+.
+
+@verb #154:"@add-note" any any any rxd
+@program #154:@add-note
+"The interface for adding a note.";
+"The user is presented with a category list. When they select the category, they either pick a name or their arguments are used as the name. They then get dumped into the standard :add_note verb.";
+categories = this.utils:print_category_tree(1, args);
+choice = this.utils:standard_menu(categories, argstr);
+if (choice == $failed_match)
+  return player:tell("Invalid selection.");
+else
+  category = choice[2..$];
+  player:tell("Note title:");
+  title = $command_utils:read();
+  player:tell("Enter tags, one per line. You can configure tag color with the [red]@tags[normal] command. Known tags:");
+  player:tell(this.utils:tag_title_list(this.utils:all_tags()));
+  tags = $edit_utils:editor();
+  new_note = this.utils:add_note(title, {});
+  this.utils:add_note_to_category(new_note, category);
+  for x in (tags)
+    if (x == "")
+      continue;
+    endif
+    tag_id = this.utils:add_tag(x);
+    this.utils:add_tag_to_note(tag_id, new_note);
+  endfor
+  player:tell("Note body:");
+  upload_command = tostr("@notes-set-text ", new_note);
+  body = this.utils:invoke_editor(upload_command, {}, title);
+endif
+.
+
+@verb #154:"@delete-note @edit-note @notes @export-note" any any any rxd
+@program #154:@delete-note
+standard_args = {1, args ? argstr | ""};
+if (verb == "@notes")
+  if (args && (argstr in {"?", "help"}))
+    return player:tell_lines(this.help_msg);
+  else
+    return this.utils:main_notes_menu(@standard_args);
+  endif
+elseif (verb == "@delete-note")
+  call_verb = "do_delete_note";
+elseif (verb == "@edit-note")
+  call_verb = "do_edit_note";
+elseif (verb == "@export-note")
+  call_verb = "do_export_note";
+else
+  return raise(E_INVARD, tostr("Function ", verb, " not found."));
+endif
+this.utils:note_menu(call_verb, @standard_args);
+.
+
+@verb #154:"@notes-set-text" any any any rxd
+@program #154:@notes-set-text
+"@notes-set-text <id>";
+"Set the text of the note <id>. This command is only intended to be called by the local editor. As such, it does minimal sanity checking.";
+note = toint(argstr);
+"We want this to be as silent as possible, soooo...";
+body = {};
+while ((line = read(player)) != ".")
+  body = {@body, line};
+endwhile
+this.utils:set_note_text(note, body);
+name = this.utils:note_name(note);
+player:tell("Set text of note \"", name, "\".");
+.
+
+@verb #154:"@add-folder" any any any rxd
+@program #154:@add-folder
+"The front-end interface for adding new categories. (Now called folders!)";
+if (!args)
+  player:tell("Enter a folder name:");
+  name = $command_utils:read();
+else
+  name = argstr;
+endif
+if ($command_utils:yes_or_no("Is this a top-level folder?") == 1)
+  category = 1;
+else
+  player:tell("Select a folder to put '", name, "' in:");
+  categories = this.utils:print_category_tree(1, args ? 1 | 0);
+  choice = this.utils:standard_menu(categories);
+  if (choice == $failed_match)
+    return player:tell("Invalid selection.");
+  else
+    category = choice[2..$];
+  endif
+endif
+new_category = this.utils:add_category(category, name);
+player:tell(this.utils:category_breadcrumb(new_category, 1), " added!");
+.
+
+@verb #154:"@delete-folder" any any any rxd
+@program #154:@delete-folder
+"The front-end interface for deleting categories. (Now called folders!)";
+categories = this.utils:print_category_tree(1, args ? 1 | 0);
+choice = this.utils:standard_menu(categories, argstr);
+if (choice == $failed_match)
+  return player:tell("Invalid selection.");
+else
+  category = choice[2..$];
+  crumbs = this.utils:category_breadcrumb(category, 1);
+  if ($command_utils:yes_or_no(tostr("Are you sure you want to delete ", crumbs, "?")) != 1)
+    return player:tell("Aborted.");
+  endif
+  result = `this.utils:delete_category(category) ! E_INVARG';
+  if (result == E_INVARG)
+    return player:tell("That folder has contents. Move or delete them first.");
+  elseif (typeof(result) == ERR)
+    return player:tell("An unknown error occurred.");
+  else
+    player:tell(crumbs, " deleted.");
+  endif
+endif
+.
+
+@prop #154."utils" #155 rc
+@prop #154."options" [] rc
+;;#154.("help_msg") = {"Anything enclosed in [brackets] is an optional argument. Anything in <angle brackets> is a required argument.", "", "@notes [search term] - Display a list of folders and notes.", "@add-note [folder search term] - Add a new note.", "@edit-note [search term] - Edit the text of a note.", "@delete-note [search term] - Delete a note.", "@tags - Add, edit, or delete tags.", "@add-folder <folder name> - Add a new folder.", "@delete-folder <search term> - Delete a folder.", "@rename-folder <folder search> to <new name> - Rename a folder.", "@export <note search term> - E-mail a note to yourself.", "@note-options - Configure various options. For help on what an option means, type 'help' inside of the @note-options menu followed by the number of the option.", "", "Most of the commands above will use the same interface for selecting a folder or a note. By default, with no arguments, this interface will display a list of folders and notes at the root of the notes hierarchy. From there, you can either select a note or continue to move your way down the folder tree until you find what you're looking for. Alternatively, you can provide an argument to the command to initiate a search.", "", "By default, searches will either locate notes and folders by title or, if your search is numeric, by ID. However, you can also specify specific criteria to search for. This allows you to narrow your search much more efficiently by combining multiple criteria keywords into a single search. Possible criteria keywords are:", "", "id: Search for a note or folder ID. This is the default behavior when searching for a number.", "name: Search for a note or folder by title. You can use regular expressions or plain strings here. This is the default behavior when searching a string with no keywords.", "tag: Search for notes tagged with a specific tag.", "content: Search for notes with a specific string in the body.", "", "The name and tag keywords accept multiple values separated by commas. This means that your search must match ALL of the given criteria.", "", "Examples:", "Find a note titled 'notetaking system':", "@notes notetaking system", "", "Find any notes with the tag angelus AND acrylon:", "@notes tag: angelus, acrylon", "", "Find any notes with the tag angelus, the tag acrylon, and 'store' in the title:", "@notes tag: angelus, acrylon title: store", "", "Find any notes with the tags angelus and acrylon, 'store' in the title, and containing the text \"cheese danish\"", "@notes tag: angelus, acrylon title: store, content: cheese danish", "", "Find notes with a title containing 'al', 'part', AND 'ship':", "@notes al, part, ship"}
+;;#154.("feature_verbs") = {}
+;;#154.("aliases") = {"Generic Note Interface Feature", "Note", "Interface", "Feature", "Note Interface Feature", "Interface Feature", "Generic"}
+;;#154.("description") = "This is the Generic Feature Object.  It is not meant to be used as a feature object itself, but is handy for making new feature objects."
+;;#154.("object_size") = {0, 0}
