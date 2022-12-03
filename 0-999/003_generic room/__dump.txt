@@ -252,7 +252,8 @@ elseif ((prepstr != "in") && (prepstr != "on"))
     dobjstr = dobjstr + (prepstr && ((dobjstr && " ") + prepstr));
     dobjstr = dobjstr + (iobjstr && ((dobjstr && " ") + iobjstr));
   endif
-  dobj = this:match_object(dobjstr);
+  " dobj = this:match_object(dobjstr);";
+  dobj = player:my_match_object(dobjstr);
   if (!$command_utils:object_match_failed(dobj, dobjstr))
     dobj:look_self();
   endif
@@ -272,6 +273,7 @@ else
     endif
   endif
 endif
+"Last modified Sat Dec  3 14:40:19 2022 UTC by caranov (#133).";
 .
 
 @verb #3:"announce_all" this none this
@@ -565,7 +567,13 @@ endif
 @verb #3:"match" this none this
 @program #3:match
 target = {@this:contents(), @this:exits()};
-return $string_utils:match(args[1], target, "name", target, "aliases");
+try
+  return $string_utils:newmatch(args[1], target);
+except e (ANY)
+  #133:tell((("error with verb " + verb) + ": ") + e[2]);
+  return $string_utils:match(args[1], target, "name", target, "aliases");
+endtry
+"Last modified Sat Dec  3 14:52:03 2022 UTC by caranov (#133).";
 .
 
 @verb #3:"@remove-exit" any none none

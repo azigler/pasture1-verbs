@@ -256,4 +256,4 @@ endif
 ;;#154.("feature_verbs") = {}
 ;;#154.("aliases") = {"Generic Note Interface Feature", "Note", "Interface", "Feature", "Note Interface Feature", "Interface Feature", "Generic"}
 ;;#154.("description") = "This is the Generic Feature Object.  It is not meant to be used as a feature object itself, but is handy for making new feature objects."
-;;#154.("object_size") = {0, 0}
+;;#154.("object_size") = {17631, 1670054400}

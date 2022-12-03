@@ -133,7 +133,18 @@ endif
 @verb #6:"my_match_object" this none this
 @program #6:my_match_object
 ":my_match_object(string [,location])";
-return $string_utils:match_object(@{@args, this.location}[1..2], this);
+{string, ?olist = {@this:contents(), @this.location:contents()}} = args;
+"if(typeof(olist)==obj);";
+"olist = olist:contents();";
+"endif";
+(typeof(olist) == OBJ) && (olist = olist:contents());
+try
+  return $match_utils:match(string, olist);
+except e (ANY)
+  player:tell("An error has been encountered: " + e[2]);
+  return $string_utils:match_object(@{@args, this.location}[1..2], this);
+endtry
+"Last modified Sat Dec  3 14:38:31 2022 UTC by caranov (#133).";
 .
 
 @verb #6:"tell_contents" this none this
@@ -1634,11 +1645,13 @@ if (!dobjstr)
   player:notify(tostr("Usage:  ", verb, " <object>"));
   return E_INVARG;
 endif
-what = player.location:match_object(dobjstr);
+"what = player.location:match_object(dobjstr);";
+what = player:my_match_object(dobjstr);
 if ($command_utils:object_match_failed(what, dobjstr))
   return;
 endif
 what:do_examine(player);
+"Last modified Sat Dec  3 14:56:24 2022 UTC by caranov (#133).";
 .
 
 @verb #6:"add_feature" this none this rxd #36
@@ -2724,6 +2737,7 @@ elseif (what in {"edit", "remove"})
   $changelog:(what)();
   return player:tell(what + " successful.");
 endif
+"Last modified Sat Dec  3 15:01:19 2022 UTC by caranov (#133).";
 .
 
 @verb #6:"disband" none none none rxd #133
@@ -2843,7 +2857,7 @@ for j, count in (emote)
     if ($command_utils:object_match_failed(item, j[2..$]))
       return;
     else
-      emote[count] = isa(item, $player) ? "%" + tostr(item) | item:title();
+      emote[count] = item:title();
       if (j[$ - 1..$] == "'s")
         emote[count] = emote[count] + "'s";
       endif
@@ -2851,8 +2865,9 @@ for j, count in (emote)
   endif
 endfor
 emote = $string_utils:from_list(emote, " ");
-announce = $string_utils:substitute((noname == 0) ? (this.name + nospace) + emote | emote, {{"%n", this.name}});
+announce = $string_utils:substitute((noname == 0) ? (this:title() + nospace) + emote | emote, {{"%n", this:title()}});
 return this.location:announce_all(announce);
+"Last modified Sat Dec  3 14:53:54 2022 UTC by caranov (#133).";
 .
 
 @verb #6:"peer" any any any rxd #139
@@ -2881,6 +2896,52 @@ else
   player:tell("");
   direction.dest:look_self();
 endif
+.
+
+@verb #6:"say" any any any rxd #133
+@program #6:say
+"speaking styles can be done with ~ and !, to indicate emotion and tone, respectively.";
+"say ~glumly !mutter we won't survive";
+"would show up as Caranov glumly mutters, \"We won't survive.\" It also adapts to giving only one argument, whether it be emotion or tone.";
+"Tones can also be natural, if punctuation is used at the end of the sentence, although it is vastly more limited.";
+"keep in mind that messages must at least be 3 words long to take tone and emotion into consideration. This does not apply to punctuation.";
+if (!args)
+  return player:tell("What would you like to say?");
+endif
+message = args;
+emotion = "";
+tone = "say";
+if (((message:length() > 2) && (message[1]:length() > 1)) && (message[2]:length() > 1))
+  if (message[1][1] == "~")
+    emotion = message[1][2..$];
+  elseif (message[1][1] == "!")
+    tone = message[1][2..$];
+  endif
+  if (message[2][1] == "!")
+    tone = message[2][2..$];
+  endif
+  for i, ind in (message[1..2])
+    if (("~" in i) || ("!" in i))
+      message = message:setremove(i);
+    endif
+  endfor
+endif
+punc = ["?" -> "ask", "??" -> "demand", "???" -> "derisively ask", "!" -> "exclaim", "!!" -> "heavily emphasize", "!!!" -> "angrily roar", ".." -> "%<trail> off", "..." -> "muse"];
+if (tone == "say")
+  for examine in ({length(message[$]) - 2, length(message[$]) - 1, length(message[$])})
+    try
+      if (maphaskey(punc, message[$][examine..$]))
+        tone = punc[message[$][examine..$]];
+        break;
+      endif
+    except e (ANY)
+      continue;
+    endtry
+  endfor
+endif
+((tone[$] != "s") && (tone = ("%<" + tone) + "s>")) || (tone = ("%<" + tone) + ">");
+$you:say_action(((((("%n " + emotion) + " ") + tone) + ", \"") + $string_utils:from_list(message, " ")) + "\"");
+"Last modified Sat Dec  3 15:36:05 2022 UTC by caranov (#133).";
 .
 
 @prop #6."features" {} r #36

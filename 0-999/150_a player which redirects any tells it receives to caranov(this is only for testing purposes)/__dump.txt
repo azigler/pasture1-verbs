@@ -6,4 +6,4 @@
 
 ;;#150.("aliases") = {"a player which redirects any tells it receives to caranov(this is only for testing purposes)"}
 ;;#150.("description") = "You see a player who should type '@describe me as ...'."
-;;#150.("object_size") = {0, 0}
+;;#150.("object_size") = {2956, 1670054400}

@@ -10,7 +10,8 @@ elseif (prepstr != "in" && prepstr != "on")
     dobjstr = dobjstr + (prepstr && (dobjstr && " ") + prepstr);
     dobjstr = dobjstr + (iobjstr && (dobjstr && " ") + iobjstr);
   endif
-  dobj = this:match_object(dobjstr);
+  " dobj = this:match_object(dobjstr);";
+  dobj = player:my_match_object(dobjstr);
   if (!$command_utils:object_match_failed(dobj, dobjstr))
     dobj:look_self();
   endif
@@ -30,3 +31,4 @@ else
     endif
   endif
 endif
+"Last modified Sat Dec  3 14:40:19 2022 UTC by caranov (#133).";

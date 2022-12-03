@@ -19,7 +19,7 @@ elseif (string == "here")
   return player.location;
 elseif (valid(object = $string_utils:literal_object(string)))
   return object;
-elseif (valid(object = $string_utils:match(string, olist, "aliases")))
+elseif (valid(object = $string_utils:newmatch(string, olist)))
   return object;
 elseif (parsed = this:parse_ordinal_reference(string))
   return this:match_nth(parsed[2], olist, parsed[1]);
@@ -35,10 +35,11 @@ else
 endif
 "Profane (#30788) - Sat Jan  3, 1998 - Changed so literals get returned ONLY if in the passed object list.";
 "Profane (#30788) - Sat Jan  3, 1998 - OK, that broke lots of stuff, so changed it back.";
+"Last modified Sat Dec  3 14:23:29 2022 UTC by caranov (#133).";
 .
 
-@verb #51:"match_nth" this none this
-@program #51:match_nth
+@verb #51:"match_nth(old)" this none this
+@program #51:match_nth(old)
 ":match_nth(string, objlist, n)";
 "Find the nth object in 'objlist' that matches 'string'.";
 {what, where, n} = args;
@@ -179,6 +180,28 @@ if (caller_perms().wizard)
   pass(@args);
   this.matching_room = $nothing;
 endif
+.
+
+@verb #51:"match_nth" this none this rxd #133
+@program #51:match_nth
+":match_nth(string, objlist, n)";
+"Find the nth object in 'objlist' that matches 'string'.";
+{what, where, n} = args;
+objs = $string_utils:newmatch(what, where:contents(), 1);
+if (objs == #-3)
+  return objs;
+endif
+for v in (objs)
+  z = 0;
+  for q in ($building_utils:get_aliases(v))
+    z = z || (index(q, what) == 1);
+  endfor
+  if (z && (!(n = n - 1)))
+    return v;
+  endif
+endfor
+return $failed_match;
+"Last modified Sat Dec  3 10:17:06 2022 UTC by caranov (#133).";
 .
 
 @prop #51."ordn" {} rc

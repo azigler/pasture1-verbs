@@ -2,4 +2,4 @@
 ;;#151.("following") = #149
 ;;#151.("aliases") = {"A folded hamburger"}
 ;;#151.("description") = "You see a player who should type '@describe me as ...'."
-;;#151.("object_size") = {0, 0}
+;;#151.("object_size") = {2262, 1670054400}

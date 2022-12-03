@@ -48,4 +48,4 @@ this.text = listdelete(this.text, crossed_index);
 @prop #166."completed" {} rc
 ;;#166.("aliases") = {"generic zig checklist"}
 ;;#166.("description") = "There appears to be some writing on the note ..."
-;;#166.("object_size") = {0, 0}
+;;#166.("object_size") = {3940, 1670054400}

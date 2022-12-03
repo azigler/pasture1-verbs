@@ -51,5 +51,6 @@ pass(@args);
 @prop #82."protect_read" 1 rc
 @prop #82."dump_interval" 3600 rc
 @prop #82."no_name_lookup" 1 rc
+@prop #82."protect_curl" 1 rc
 ;;#82.("aliases") = {"Server Options"}
 ;;#82.("object_size") = {9190, 1669929999}

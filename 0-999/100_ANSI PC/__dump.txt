@@ -170,8 +170,8 @@ else
 endif
 .
 
-@verb #100:"say" any any any rx
-@program #100:say
+@verb #100:"say(old)" any any any rx
+@program #100:say(old)
 if ($object_utils:has_callable_verb(player.location, "say") != {#3})
   "Idiot-proofed it against porting wizards who change $room to something other than #3 (since :say would not be defined on $room.) Clueful wizards can change this.";
   return player.location:(verb)(@args);

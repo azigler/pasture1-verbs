@@ -18,7 +18,7 @@ elseif (string == "here")
   return player.location;
 elseif (valid(object = $string_utils:literal_object(string)))
   return object;
-elseif (valid(object = $string_utils:match(string, olist, "aliases")))
+elseif (valid(object = $string_utils:newmatch(string, olist)))
   return object;
 elseif (parsed = this:parse_ordinal_reference(string))
   return this:match_nth(parsed[2], olist, parsed[1]);
@@ -34,3 +34,4 @@ else
 endif
 "Profane (#30788) - Sat Jan  3, 1998 - Changed so literals get returned ONLY if in the passed object list.";
 "Profane (#30788) - Sat Jan  3, 1998 - OK, that broke lots of stuff, so changed it back.";
+"Last modified Sat Dec  3 14:23:29 2022 UTC by caranov (#133).";

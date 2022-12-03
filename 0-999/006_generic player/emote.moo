@@ -32,7 +32,7 @@ for j, count in (emote)
     if ($command_utils:object_match_failed(item, j[2..$]))
       return;
     else
-      emote[count] = isa(item, $player) ? "%" + tostr(item) | item:title();
+      emote[count] = item:title();
       if (j[$ - 1..$] == "'s")
         emote[count] = emote[count] + "'s";
       endif
@@ -40,5 +40,6 @@ for j, count in (emote)
   endif
 endfor
 emote = $string_utils:from_list(emote, " ");
-announce = $string_utils:substitute(noname == 0 ? this.name + nospace + emote | emote, {{"%n", this.name}});
+announce = $string_utils:substitute(noname == 0 ? this:title() + nospace + emote | emote, {{"%n", this:title()}});
 return this.location:announce_all(announce);
+"Last modified Sat Dec  3 14:53:54 2022 UTC by caranov (#133).";

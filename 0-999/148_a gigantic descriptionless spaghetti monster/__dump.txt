@@ -3,4 +3,4 @@
 ;;#148.("following") = #133
 ;;#148.("aliases") = {"a gigantic descriptionless spaghetti monster"}
 ;;#148.("description") = "You see a player who should type '@describe me as ...'."
-;;#148.("object_size") = {0, 0}
+;;#148.("object_size") = {2330, 1670054400}

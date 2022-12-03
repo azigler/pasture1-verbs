@@ -368,6 +368,12 @@ if (caller_perms().wizard)
 endif
 .
 
+@verb #21:"get_aliases" this none this rxd #133
+@program #21:get_aliases
+return {@args[1].aliases, @args[1]:title():explode()};
+"Last modified Sat Dec  3 10:15:37 2022 UTC by caranov (#133).";
+.
+
 @prop #21."classes" {} rc
 ;;#21.("classes") = {#6, #3, #7, #9, #8, #5, #74, #45, #30, #37, #78, #68}
 @prop #21."class_string" {} rc

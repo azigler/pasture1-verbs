@@ -1,6 +1,6 @@
 @create $room named before a cavern:before a cavern
 ;;#137.("entrances") = {#140, #143}
-;;#137.("blessed_task") = 223985908
+;;#137.("blessed_task") = 210893052
 ;;#137.("exits") = {#142, #144}
 ;;#137.("aliases") = {"before a cavern"}
 ;;#137.("object_size") = {864, 1669967999}
