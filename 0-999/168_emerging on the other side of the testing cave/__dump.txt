@@ -1,0 +1,4 @@
+@create $room named emerging on the other side of the testing cave:emerging on the other side of the testing cave
+;;#168.("entrances") = {#169}
+;;#168.("aliases") = {"emerging on the other side of the testing cave"}
+;;#168.("object_size") = {926, 1670140800}

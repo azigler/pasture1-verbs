@@ -31,6 +31,23 @@ endif
 return tostr(this.path, (database != 0) ? "/" + database | "");
 .
 
+@verb #156:"init_for_core" this none this
+@program #156:init_for_core
+if (caller_perms().wizard)
+  this.open = [];
+  this.after_connect_commands = [];
+endif
+.
+
+@verb #156:"server_started" this none this
+@program #156:server_started
+if (caller == #0)
+  this.open = [];
+else
+  return E_PERM;
+endif
+.
+
 @prop #156."open" ["databases/chaosmoo_notes.sqlite" -> 1] rc
 @prop #156."ignored_path" "files/" rc
 @prop #156."path" "databases" rc

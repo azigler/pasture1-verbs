@@ -686,7 +686,7 @@ return !(!`property_info(@args) ! ANY');
 @prop #79."large_negative_number" -10000 rc
 @prop #79."max_unmeasured" 10 rc
 @prop #79."unmeasured_multiplier" 100 rc
-@prop #79."working" #128 rc
+@prop #79."working" #129 rc
 @prop #79."cycle_days" 5 rc
 @prop #79."task_time_limit" 500 rc
 @prop #79."byte_based" 1 rc

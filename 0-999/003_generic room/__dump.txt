@@ -316,17 +316,21 @@ endif
 if (object == this.blessed_object)
   this.blessed_object = #-1;
 endif
-if (is_player(object))
-  followers = player:get_all_followers(object);
-  res = (length(followers) > 1) && 1;
+if (is_player(object) && object.followers)
+  followers = object:get_all_followers();
+  res = (followers:length() > 1) ? 1 | 0;
   object:drag_followers(res);
-  (res == 1) && this:announce_all(($string_utils:title_list(followers) + " follow in behind ") + player.name);
+  fork (0)
+    (res == 1) && object.location:announce_all(($string_utils:title_list(followers) + " follow in behind ") + object.name);
+  endfork
 endif
+"Last modified Sat Dec  3 19:52:09 2022 UTC by caranov (#133).";
 .
 
 @verb #3:"exitfunc" this none this
 @program #3:exitfunc
 return;
+"Last modified Sat Dec  3 19:50:21 2022 UTC by caranov (#133).";
 .
 
 @verb #3:"remove_exit" this none this
@@ -670,6 +674,7 @@ else
   player:tell("I don't know which direction `", verb, "' you mean.");
 endif
 return 1;
+"Last modified Sat Dec  3 16:46:09 2022 UTC by caranov (#133).";
 .
 
 @verb #3:"room_announce*_all_but" this none this
@@ -795,6 +800,48 @@ if ((!this.dark) && (contents != {}))
     endif
   endif
 endif
+.
+
+@verb #3:"huh" this none this rxd #133
+@program #3:huh
+{command, args} = args;
+if (valid(exit = this:match_exit(command)))
+  exit:invoke(player);
+  return 1;
+else
+  return 0;
+endif
+"Last modified Sat Dec  3 17:15:21 2022 UTC by caranov (#133).";
+.
+
+@verb #3:"get_nearby_rooms" this none this rxd #133
+@program #3:get_nearby_rooms
+{?to = 5} = args;
+ret = prevlist = {};
+rooms = {this};
+currently_at = 0;
+while (true)
+  if (currently_at >= to)
+    break;
+  endif
+  next = {};
+  for room in (rooms)
+    if (room != this)
+      ret = ret:add(room);
+    endif
+    for exit in (room:exits())
+      if (((((!valid(exit)) && (exit.source != room)) || (exit.dest == room)) || (exit.dest == this)) || (!valid(exit.dest)))
+        continue;
+      endif
+      next = next:add(exit.dest);
+    endfor
+  endfor
+  rooms = next;
+  next = {};
+  currently_at = currently_at + 1;
+endwhile
+return ret;
+"Last modified Sat Dec  3 19:06:13 2022 UTC by caranov (#133).";
 .
 
 @prop #3."who_location_msg" "%T" rc

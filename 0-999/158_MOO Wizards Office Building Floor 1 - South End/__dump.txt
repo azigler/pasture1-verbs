@@ -1,6 +1,6 @@
 @create $skyes_rooms named MOO Wizards Office Building Floor 1 - South End:MOO Wizards Office Building Floor 1 - South End
 ;;#158.("entrances") = {#159, #163}
-;;#158.("blessed_task") = 1332315906
+;;#158.("blessed_task") = 1133774555
 ;;#158.("exits") = {#160, #162}
 ;;#158.("aliases") = {"MOO Wizards Office Building Floor 1 - South End"}
 ;;#158.("object_size") = {992, 1670054400}

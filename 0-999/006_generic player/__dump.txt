@@ -110,6 +110,10 @@ try
 except e (ANY)
   return 1;
 endtry
+if (this.location:huh(verb, arg))
+  return 1;
+endif
+"Last modified Sat Dec  3 17:10:13 2022 UTC by caranov (#133).";
 .
 
 @verb #6:"last_huh" this none this
@@ -1928,6 +1932,7 @@ if (args[1] == #-1)
 endif
 set_task_perms(caller_perms());
 pass(@args);
+"Last modified Sat Dec  3 19:43:10 2022 UTC by caranov (#133).";
 .
 
 @verb #6:"announce*_all_but" this none this
@@ -2676,14 +2681,16 @@ if ((this.following != 0) || (who == this))
   endif
   $you:say_action("%N %<stops> following %t.", this, this.following);
   this.following.followers = setremove(this.following.followers, this);
-  this.following = 0;
+  clear_property(this, "following");
 endif
 if (who == this)
   return;
 endif
+return;
 $you:say_action("%N %<begins> following %t.", this, who);
 this.following = who;
 who.followers = setadd(who.followers, this);
+"Last modified Sat Dec  3 18:03:17 2022 UTC by caranov (#133).";
 .
 
 @verb #6:"drag_followers" this none this rxd #133
@@ -2944,6 +2951,76 @@ $you:say_action(((((("%n " + emotion) + " ") + tone) + ", \"") + $string_utils:f
 "Last modified Sat Dec  3 15:36:05 2022 UTC by caranov (#133).";
 .
 
+@verb #6:"yell" any any any rxd #133
+@program #6:yell
+if (!args)
+  return player:tell("What would you like to yell?");
+endif
+what = tostr(@args);
+if (isa(this.location, $room) == 0)
+  return player:tell("You are unable to yell here.");
+endif
+player:tell(("You yell, \"" + what) + "\"");
+for i in (this.location:get_nearby_rooms(3))
+  i:announce_all(((this.name + " yells, \"") + what) + "\"");
+endfor
+return 1;
+"Last modified Sat Dec  3 19:04:51 2022 UTC by caranov (#133).";
+.
+
+@verb #6:"autoafk-o*ptions" any none none xd #128
+@program #6:autoafk-options
+options = this.autoafk_options;
+menu = {["name" -> "Automatically go AFK After a Period of Inactivity", "identifier" -> "auto_afk", "state" -> options["auto_afk"]], ["name" -> "Automatically Return from AFK When Sending a Command", "identifier" -> "auto_unafk", "state" -> options["auto_unafk"]], ["name" -> "Maximum Time of Inactivity Before Going AFK", "identifier" -> "max_time", "state" -> $time_utils:english_time(options["max_time"])]};
+choice = $menu_utils:options_menu(menu);
+value = options[choice];
+if (choice in {"auto_afk", "auto_unafk"})
+  value = !value;
+  if (choice == "auto_afk")
+    player:tell("You will ", (value == 1) ? "now" | "no longer", " automatically go AFK after a period of inactivity.");
+  elseif (choice == "auto_unafk")
+    player:tell("You will ", (value == 1) ? "now" | "no longer", " automatically return from AFK when sending a command.");
+  endif
+else
+  player:tell("Enter how long (in minutes) the MOO should take to set you as AFK.");
+  value = `toint($command_utils:read()) * 60 ! ANY => 600';
+  if (value < 1)
+    return player:tell("Try at least 1 minute, dude.");
+  else
+    player:tell("Maximum time of inactivity set to ", $time_utils:english_time(value), ". Be advised that this might be delayed slightly.");
+  endif
+endif
+options[choice] = value;
+this.autoafk_options = options;
+"Last modified Sun Dec  4 04:43:08 2022 UTC by Saeed (#128).";
+.
+
+@verb #6:"@advent*ofcode" any any any rxd #139
+@program #6:@adventofcode
+$advent_2022:fetch();
+if (($advent_2022.cache == ([])) || ((time() - $advent_2022.last_fetch) >= 86400))
+  return player:tell("Something is wrong. It seems there's been no recent Advent of Code leaderboard data in some time. Sorry!");
+else
+  ret = scores = {};
+  json = $advent_2022.cache;
+  player:tell("Advent of Code ", json["event"], " Leaderboard");
+  player:tell("");
+  for v, k in (json["members"])
+    stars = v["stars"];
+    score = ("[bold][yellow]" + $ansi_utils:space(stars / 2, "*")) + "[normal]";
+    if (stars % 2)
+      score = tostr(score, "[white]*[normal]");
+    endif
+    score = tostr(score, " (", tofloat(stars) / 2.0, ")");
+    ret = {@ret, {(v["name"] == "null") ? tostr("anonymous user #", k) | v["name"], tostr(v["local_score"]), score}};
+    scores = {@scores, v["local_score"]};
+  endfor
+endif
+ret = sort(ret, scores, 0, 1);
+ret = {{"Person", "Total Score", "Stars"}, @ret};
+player:tell_lines($string_utils:autofit(ret, 3, 1));
+.
+
 @prop #6."features" {} r #36
 @prop #6."previous_connection" 0 ""
 @prop #6."email_address" "" ""
@@ -2989,6 +3066,7 @@ $you:say_action(((((("%n " + emotion) + " ") + tone) + ", \"") + $string_utils:f
 @prop #6."ofollow_out_msg" "%n follows behind %t" rc
 @prop #6."ofollow_in_msg" "%N follows in behind %t." rc
 @prop #6."recorded" {} "" #128
+@prop #6."autoafk_options" ["auto_afk" -> 1, "auto_unafk" -> 1, "max_time" -> 600] rc
 ;;#6.("aliases") = {"generic player"}
 ;;#6.("description") = "You see a player who should type '@describe me as ...'."
 ;;#6.("object_size") = {132036, 1669929999}

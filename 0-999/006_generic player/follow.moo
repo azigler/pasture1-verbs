@@ -11,11 +11,13 @@ if (this.following != 0 || who == this)
   endif
   $you:say_action("%N %<stops> following %t.", this, this.following);
   this.following.followers = setremove(this.following.followers, this);
-  this.following = 0;
+  clear_property(this, "following");
 endif
 if (who == this)
   return;
 endif
+return;
 $you:say_action("%N %<begins> following %t.", this, who);
 this.following = who;
 who.followers = setadd(who.followers, this);
+"Last modified Sat Dec  3 18:03:17 2022 UTC by caranov (#133).";

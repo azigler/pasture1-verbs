@@ -50,6 +50,7 @@ if (!callers())
   $server["last_restart_time"] = time();
   $network:server_started();
   $login:server_started();
+  $sqlite_interface:server_started();
 endif
 .
 
@@ -546,6 +547,13 @@ return (value in {1, 1.0}) ? word | (((verb == "ies") ? word[1..$ - 1] | word) +
 @verb #0:"do_command" this none this
 @program #0:do_command
 server_log((("CMD from " + $string_utils:name_and_number(player)) + ": ") + argstr);
+try
+  if (player.autoafk_options["auto_unafk"] && (player in $global_chat.afk_list))
+    "Clearly not AFK anymore.";
+    $global_chat:afk();
+  endif
+except (ANY)
+endtry
 .
 
 @verb #0:"bf_curl" this none this
@@ -799,6 +807,9 @@ endif
 @prop #0."skyes_rooms" #157 r #129
 @prop #0."skyes_things" #165 r #129
 @prop #0."zig_checklist" #166 r
+@prop #0."sqlite_interface" #156 rc
+@prop #0."gen_utils" #170 rc
+@prop #0."advent_2022" #171 rc
 ;;#0.("aliases") = {"The System Object"}
 ;;#0.("description") = "The known universe."
 ;;#0.("object_size") = {37739, 1669929999}

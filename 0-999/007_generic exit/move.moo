@@ -37,3 +37,4 @@ else
     this:announce_msg(what.location, what, msg);
   endif
 endif
+"Last modified Sat Dec  3 19:25:40 2022 UTC by caranov (#133).";

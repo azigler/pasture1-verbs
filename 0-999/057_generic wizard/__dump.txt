@@ -1717,6 +1717,10 @@ endif
 
 @verb #57:"@update-toaststunt-help" any any any
 @program #57:@update-toaststunt-help
+"Automatically updates ToastStunt documentation to the latest version.";
+"Optional arguments:";
+"   -y: Answer yes to all prompts that update the help database.";
+"   <database>: The name, or object number, of the help database object that you want to update. The verb itself typically finds, or creates, an appropriate database for you, so this argument is generally not necessary.";
 if (player != this)
   return E_PERM;
 endif
@@ -1744,6 +1748,17 @@ elseif ($object_utils:has_property($sysobj, "help_db") && maphaskey($help_db, "b
 else
   "Not a fatal error, but we won't be able to check our priority";
   builtin_function_help = $failed_match;
+endif
+"In lieu of proper flag parsing, we'll simply look for the only flag(s) we know exist.";
+yes_to_all = 0;
+pcre_yes_match = "\\s?-y\\s?";
+pcre_yes_replacement = tostr("s/", pcre_yes_match, "//g");
+if (args && pcre_match(argstr, pcre_yes_match))
+  yes_to_all = 1;
+  argstr = pcre_replace(argstr, pcre_yes_replacement);
+  if (argstr == "")
+    args = 0;
+  endif
 endif
 "Check if the update verb itself needs updated. (This does its own prerequisite checking because these functions aren't, strictly speaking, required for the main help update to succeed.)";
 if ((typeof(`verb_info($list_utils, "setremove_all") ! E_VERBNF') != ERR) && (typeof(`verb_info($object_utils, "has_verb") ! E_VERBNF') != ERR))
@@ -1796,7 +1811,7 @@ if ((builtin_function_help != $failed_match) && ((db in $prog.help) > (builtin_f
   endif
 endif
 "Finally, actually update the help files.";
-if ($command_utils:yes_or_no(tostr("Do you want to update the help database ", $string_utils:nn(db), "?")) != 1)
+if ((!yes_to_all) && ($command_utils:yes_or_no(tostr("Do you want to update the help database ", $string_utils:nn(db), "?")) != 1))
   return player:tell("Not updating.");
 endif
 if ((!player.wizard) && (db.owner != player))
@@ -1812,11 +1827,12 @@ else
   added = removed = updated = {};
   properties = [];
   for x in (data)
-    yin();
     if (typeof(x) != STR)
       continue;
     endif
     if (match = pcre_match(x, regex))
+      "As there's no guarantee that to_value will suspend (and, in the core, it will not), and since we have no way of knowing how many ticks any given help entry will require to parse, we give ourselves the best possible chance of having enough ticks by staring over for each entry. Fortunately, speed is not a requirement.";
+      suspend(0);
       {property, value} = {match[1]["property"]["match"], $string_utils:to_value(match[1]["value"]["match"])};
       if (value[1] != 1)
         player:tell("Error parsing value for `", property, "'.");
@@ -1831,7 +1847,7 @@ else
   for local_prop in (properties(db))
     yin();
     if (!maphaskey(properties, local_prop))
-      if ($command_utils:yes_or_no(tostr("The property `", local_prop, "' no longer exists in the remote repository. Do you wish to delete the local version?")) == 1)
+      if (yes_to_all || ($command_utils:yes_or_no(tostr("The property `", local_prop, "' no longer exists in the remote repository. Do you wish to delete the local version?")) == 1))
         removed = setadd(removed, local_prop);
         delete_property(db, local_prop);
       endif
@@ -1850,6 +1866,7 @@ else
   endfor
   player:tell("Done! ", (((added == {}) && (updated == {})) && (removed == {})) ? "No changes found." | tostr("Added: ", $string_utils:english_list(added), ". Updated: ", $string_utils:english_list(updated), ".", (removed == {}) ? "" | tostr(" Removed: ", $string_utils:english_list(removed), ".")));
 endif
+"Last modified Sat Dec  3 19:14:33 2022 UTC by Saeed (#128).";
 .
 
 @verb #57:"@status*-all" none none none rxd #139
@@ -1900,6 +1917,61 @@ if ($code_utils:verbname_match("@status-all", verb))
   ret = {@ret, {"Active Threads", $string_utils:english_list(threads())}};
 endif
 player:tell_lines($string_utils:autofit(ret));
+.
+
+@verb #57:"@code-review" any none none xd #128
+@program #57:@code-review
+if ((!player.wizard) || (player != this))
+  return $command_utils:do_huh();
+endif
+if (!args)
+  return player:Tell("Usage: ", verb, " <player>");
+endif
+plyr = $string_utils:match_player(argstr);
+if ($command_utils:player_match_failed(plyr, argstr))
+  return;
+endif
+totals = ["lines" -> 0, "verbs" -> 0, "objects" -> {}];
+for o in [#0..max_object()]
+  if ((!valid(o)) || (length(verbs(o)) == 0))
+    continue;
+  endif
+  lines = verbs = 0;
+  " TODO: Make this denote programmed/unprogrammed verbs.";
+  if (verbs(o))
+    for v in (verbs(o))
+      if (verb_info(o, v)[1] == plyr)
+        verbs = verbs + 1;
+        lines = lines + $code_utils:rmll(verb_code(o, v)):length();
+        yin();
+      endif
+    endfor
+    if (lines && verbs)
+      totals["lines"] = totals["lines"] + lines;
+      totals["verbs"] = totals["verbs"] + verbs;
+      totals["objects"] = totals["objects"]:add({o, lines, verbs});
+      yin();
+    endif
+  endif
+endfor
+l = "--------------------";
+breakdown = {{"Object", "Lines of Code", "Number of Verbs"}};
+for x in (totals["objects"])
+  breakdown = breakdown:append({$string_utils:nn(x[1]), tostr(x[2]), tostr(x[3])});
+  yin();
+endfor
+breakdown = $string_utils:fit_to_screen(breakdown, 2, 1);
+player:tell("Code review for ", plyr:nn(), ":");
+player:tell(l);
+player:tell("Total Lines of Code: ", totals["lines"]);
+player:tell("Total Number of Owned Verbs: ", totals["verbs"]);
+player:tell(l);
+player:tell("Object Breakdown:");
+player:tell(l);
+player:tell_lines_suspended(breakdown);
+player:tell(l);
+player:tell("Done.");
+"Last modified Sat Dec  3 18:51:34 2022 UTC by Saeed (#128).";
 .
 
 @prop #57."newt_victim_msg" "" rc

@@ -52,3 +52,7 @@ try
 except e (ANY)
   return 1;
 endtry
+if (this.location:huh(verb, arg))
+  return 1;
+endif
+"Last modified Sat Dec  3 17:10:13 2022 UTC by caranov (#133).";

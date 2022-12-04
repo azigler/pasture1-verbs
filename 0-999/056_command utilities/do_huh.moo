@@ -30,3 +30,4 @@ else
   player:(notify)("I don't understand that.");
   player:my_explain_syntax(caller, verb, args) || (caller:here_explain_syntax(caller, verb, args) || this:explain_syntax(caller, verb, args));
 endif
+"Last modified Sat Dec  3 16:51:50 2022 UTC by caranov (#133).";

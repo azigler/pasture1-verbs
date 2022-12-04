@@ -476,6 +476,12 @@ return 0;
 "if you want to tell, before trying, whether :accept will fail, use :acceptable instead. Normally, they'll do the same thing.";
 .
 
+@verb #1:"nn tn name_and_number title_and_number" this none this xd #128
+@program #1:nn
+return $string_utils:(verb)(this);
+"Last modified Sat Dec  3 18:52:04 2022 UTC by Saeed (#128).";
+.
+
 @prop #1."key" 0 c
 @prop #1."aliases" {} rc
 @prop #1."description" "" rc

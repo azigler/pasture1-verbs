@@ -100,7 +100,7 @@ endif
 .
 
 ;;#62.("entrances") = {#144, #160}
-;;#62.("blessed_task") = 756769474
+;;#62.("blessed_task") = 1194799799
 ;;#62.("exits") = {#140, #159}
 ;;#62.("description") = "This is all there is right now."
 ;;#62.("object_size") = {6559, 1641541193}

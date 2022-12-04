@@ -26,6 +26,7 @@ else
   return 0;
 endif
 return 1;
+"Last modified Sat Dec  3 17:48:56 2022 UTC by caranov (#133).";
 .
 
 @verb #56:"player_match_result player_match_failed" this none this
@@ -366,6 +367,7 @@ else
   player:(notify)("I don't understand that.");
   player:my_explain_syntax(caller, verb, args) || (caller:here_explain_syntax(caller, verb, args) || this:explain_syntax(caller, verb, args));
 endif
+"Last modified Sat Dec  3 16:51:50 2022 UTC by caranov (#133).";
 .
 
 @verb #56:"task_info" this none this
@@ -421,7 +423,7 @@ return `who.reading_input ! ANY => 0';
 
 @prop #56."lag_samples" {} r
 @prop #56."feature_task" {} "" #36
-;;#56.("feature_task") = {1585526642, "chat", {"man", "this", "new", "net", "rocks", "downloadwise.", "still", "kind", "of", "sucks", "in", "games", "though"}, "man this new net rocks downloadwise. still kind of sucks in games though", #-3, "man this new net rocks downloadwise. still kind of sucks", "in", #-3, "games though"}
+;;#56.("feature_task") = {1591962500, "chat", {"hi.", "i", "did", "today's", "advent", "of", "code,", "but", "not", "on", "moo"}, "hi. i did today's advent of code, but not on moo", #-3, "hi. i did today's advent of code, but not", "on", #-3, "moo"}
 ;;#56.("help_msg") = {"$command_utils is the repository for verbs that are of general usefulness to authors of all sorts of commands.  For more details about any of these verbs, use `help $command_utils:<verb-name>'.", "", "Detecting and Handling Failures in Matching", "-------------------------------------------", ":object_match_failed(match_result, name)", "    Test whether or not a :match_object() call failed and print messages if so.", ":player_match_failed(match_result, name)", "    Test whether or not a :match_player() call failed and print messages if so.", ":player_match_result(match_results, names)", "    ...similar to :player_match_failed, but does a whole list at once.", "", "Reading Input from the Player", "-----------------------------", ":read()         -- Read one line of input from the player and return it.", ":yes_or_no([prompt])", "                -- Prompt for and read a `yes' or `no' answer.", ":read_lines()   -- Read zero or more lines of input from the player.", ":dump_lines(lines) ", "                -- Return list of lines quoted so that feeding them to ", "                   :read_lines() will reproduce the original lines.", ":read_lines_escape(escapes[,help])", "                -- Like read_lines, except you can provide more escapes", "                   to terminate the read.", "", "Feature Objects", "---------------", ":validate_feature -- compare command line against feature verb argument spec", "", "Utilities for Suspending", "------------------------", ":running_out_of_time()", "                -- Return true if we're low on ticks or seconds.", ":suspend_if_needed(time)", "                -- Suspend (and return true) if we're running out of time.", "", "Client Support for Lengthy Commands", "-----------------------------------", ":suspend(args)  -- Handle PREFIX and SUFFIX for clients in long commands."}
 ;;#56.("aliases") = {"Generic Utilities Package"}
 ;;#56.("description") = {"This is the command utilities utility package.  See `help $command_utils' for more details."}

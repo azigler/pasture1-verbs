@@ -8,9 +8,12 @@ endif
 if (object == this.blessed_object)
   this.blessed_object = #-1;
 endif
-if (is_player(object))
-  followers = player:get_all_followers(object);
-  res = length(followers) > 1 && 1;
+if (is_player(object) && object.followers)
+  followers = object:get_all_followers();
+  res = followers:length() > 1 ? 1 | 0;
   object:drag_followers(res);
-  res == 1 && this:announce_all($string_utils:title_list(followers) + " follow in behind " + player.name);
+  fork (0)
+    res == 1 && object.location:announce_all($string_utils:title_list(followers) + " follow in behind " + object.name);
+  endfork
 endif
+"Last modified Sat Dec  3 19:52:09 2022 UTC by caranov (#133).";

@@ -1,8 +1,10 @@
 @create $root_class named generic exit:generic exit
 @verb #7:"invoke" this none this
 @program #7:invoke
+{?who = player} = args;
 set_task_perms(caller_perms());
-this:move(player);
+this:move(who);
+"Last modified Sat Dec  3 17:14:50 2022 UTC by caranov (#133).";
 .
 
 @verb #7:"move" this none this
@@ -44,6 +46,7 @@ else
     this:announce_msg(what.location, what, msg);
   endif
 endif
+"Last modified Sat Dec  3 19:25:40 2022 UTC by caranov (#133).";
 .
 
 @verb #7:"recycle" this none this

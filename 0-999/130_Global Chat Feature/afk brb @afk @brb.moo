@@ -1,5 +1,8 @@
 #130:"afk brb @afk @brb"   any none none rxd
 
+if (caller != this && !$perm_utils:controls(cp = caller_perms(), this) && cp != $code_utils:verb_perms())
+  return E_PERM;
+endif
 if (player in this.afk_list)
   this.afk_list = setremove(this.afk_list, player);
   player:tell("You're no longer AFK!");
