@@ -89,7 +89,7 @@ this.client_stats = {clients, users};
 .
 
 @prop #121."client_info" {} ""
-;;#121.("client_info") = {{1670172151, #2, {"Atlantis", "0.9.9.8", "106"}}, {1550351436, #98, {"wxpymoo", "0.2", "0.2"}}, {1670038585, #129, {"blightmud", "5.0.0", "0"}}, {1669967401, #139, {"RMOO (Emacs)", "1.3b", "0"}}}
+;;#121.("client_info") = {{1670261251, #2, {"Atlantis", "0.9.9.8", "106"}}, {1550351436, #98, {"wxpymoo", "0.2", "0.2"}}, {1670038585, #129, {"blightmud", "5.0.0", "0"}}, {1669967401, #139, {"RMOO (Emacs)", "1.3b", "0"}}}
 @prop #121."client_stats" {} rc
 ;;#121.("messages_in") = {{"screensize", {"cols", "rows"}}, {"info", {"name", "text-version", "internal-version"}}}
 ;;#121.("messages_out") = {{"disconnect", {"reason"}}}

@@ -34,6 +34,9 @@ if (what == "add")
   endif
 elseif (what in {"edit", "remove"})
   $changelog:(what)();
-  return player:tell(what + " successful.");
+  for i in (setremove(connected_players(), player))
+    i:tell("[CHANGELOG] An entry has been ", what, "", what[$] == "e" && "d" || "ed", ".");
+  endfor
+  player:tell(what + " successful.");
 endif
-"Last modified Sat Dec  3 15:01:19 2022 UTC by caranov (#133).";
+"Last modified Mon Dec  5 17:51:33 2022 UTC by caranov (#133).";

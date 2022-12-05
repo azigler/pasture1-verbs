@@ -18,7 +18,46 @@ else
 endif
 .
 
-@prop #171."cache" ["event" -> "2022", "members" -> ["2464202" -> ["completion_day_level" -> ["1" -> ["1" -> ["get_star_ts" -> 1669918900, "star_index" -> 0], "2" -> ["get_star_ts" -> 1669918972, "star_index" -> 218]], "2" -> ["1" -> ["get_star_ts" -> 1670026469, "star_index" -> 373811], "2" -> ["get_star_ts" -> 1670027365, "star_index" -> 375166]], "3" -> ["1" -> ["get_star_ts" -> 1670110567, "star_index" -> 638687], "2" -> ["get_star_ts" -> 1670112868, "star_index" -> 642864]], "4" -> ["1" -> ["get_star_ts" -> 1670193624, "star_index" -> 921408], "2" -> ["get_star_ts" -> 1670194248, "star_index" -> 922954]]], "global_score" -> 0, "id" -> 2464202, "last_star_ts" -> 1670194248, "local_score" -> 24, "name" -> "Andrew Zigler", "stars" -> 8], "2570146" -> ["completion_day_level" -> ["1" -> ["1" -> ["get_star_ts" -> 1670017215, "star_index" -> 352457], "2" -> ["get_star_ts" -> 1670017414, "star_index" -> 353028]], "2" -> ["1" -> ["get_star_ts" -> 1670020040, "star_index" -> 360404], "2" -> ["get_star_ts" -> 1670020767, "star_index" -> 362254]], "3" -> ["1" -> ["get_star_ts" -> 1670074115, "star_index" -> 524380], "2" -> ["get_star_ts" -> 1670077096, "star_index" -> 535278]]], "global_score" -> 0, "id" -> 2570146, "last_star_ts" -> 1670077096, "local_score" -> 22, "name" -> "null", "stars" -> 6], "2573092" -> ["completion_day_level" -> [], "global_score" -> 0, "id" -> 2573092, "last_star_ts" -> 0, "local_score" -> 0, "name" -> "Nicky Nickell", "stars" -> 0], "2617254" -> ["completion_day_level" -> ["1" -> ["1" -> ["get_star_ts" -> 1670092589, "star_index" -> 588664], "2" -> ["get_star_ts" -> 1670092812, "star_index" -> 589407]], "2" -> ["1" -> ["get_star_ts" -> 1670094241, "star_index" -> 593959], "2" -> ["get_star_ts" -> 1670094695, "star_index" -> 595350]], "3" -> ["1" -> ["get_star_ts" -> 1670095235, "star_index" -> 596946], "2" -> ["get_star_ts" -> 1670095728, "star_index" -> 598431]], "4" -> ["1" -> ["get_star_ts" -> 1670130597, "star_index" -> 669354], "2" -> ["get_star_ts" -> 1670141884, "star_index" -> 723524]]], "global_score" -> 0, "id" -> 2617254, "last_star_ts" -> 1670141884, "local_score" -> 22, "name" -> "lisdude", "stars" -> 8]], "owner_id" -> 2464202] rc
-@prop #171."last_fetch" 1670194476 rc
+@verb #171:"download" this none this
+@program #171:download
+"NOTE: This is the verb I use to download the json from another MOO. It's not used here, but I included it for completeness sake.";
+"";
+":download(STR <url> [, MAP <headers>, INT <include return headers>]) => LIST <data>";
+"Download <url> using HTTP[S]. Optionally include <headers> as part of the request.";
+"If <include return headers> is true, return headers are included in the return <data>.";
+"Essentially this is an alternative to curl() because I'm too lazy to add server support for headers.";
+{url, ?headers = [], ?return_headers = 0} = args;
+"Separate the request from the URL.";
+regex = "(?<protocol>http:\\/\\/|https:\\/\\/)?(?<host>[\\w\\.]+)(?<request>.+)?";
+url = pcre_match(url, regex);
+if (!url)
+  raise(E_INVARG, "Invalid URL.");
+else
+  url = url[1];
+endif
+"Configure headers if we don't have some expected ones.";
+if (!maphaskey(headers, "Connection:"))
+  headers["Connection:"] = "close";
+endif
+tls = (url["protocol"]["match"] != "") && (url["protocol"]["match"][5] == "s");
+connection = open_network_connection(url["host"]["match"], tls ? 443 | 80, ["tls" -> tls]);
+notify(connection, tostr("GET ", (url["request"]["match"] != "") ? url["request"]["match"] | "/", " HTTP/1.1"));
+notify(connection, tostr("Host: ", url["host"]["match"]));
+for value, key in (headers)
+  notify(connection, tostr(key, " ", value));
+endfor
+notify(connection, "");
+set_connection_option(connection, "hold-input", 1);
+ret = {};
+while (typeof(line = $network:read(connection)) != ERR)
+  $command_utils:buffer();
+  ret = {@ret, line};
+endwhile
+boot_player(connection);
+return return_headers ? ret | ret["" in (ret + 1)..$];
+.
+
+@prop #171."cache" ["event" -> "2022", "members" -> ["2464202" -> ["completion_day_level" -> ["1" -> ["1" -> ["get_star_ts" -> 1669918900, "star_index" -> 0], "2" -> ["get_star_ts" -> 1669918972, "star_index" -> 218]], "2" -> ["1" -> ["get_star_ts" -> 1670026469, "star_index" -> 373811], "2" -> ["get_star_ts" -> 1670027365, "star_index" -> 375166]], "3" -> ["1" -> ["get_star_ts" -> 1670110567, "star_index" -> 638687], "2" -> ["get_star_ts" -> 1670112868, "star_index" -> 642864]], "4" -> ["1" -> ["get_star_ts" -> 1670193624, "star_index" -> 921408], "2" -> ["get_star_ts" -> 1670194248, "star_index" -> 922954]]], "global_score" -> 0, "id" -> 2464202, "last_star_ts" -> 1670194248, "local_score" -> 24, "name" -> "Andrew Zigler", "stars" -> 8], "2570146" -> ["completion_day_level" -> ["1" -> ["1" -> ["get_star_ts" -> 1670017215, "star_index" -> 352457], "2" -> ["get_star_ts" -> 1670017414, "star_index" -> 353028]], "2" -> ["1" -> ["get_star_ts" -> 1670020040, "star_index" -> 360404], "2" -> ["get_star_ts" -> 1670020767, "star_index" -> 362254]], "3" -> ["1" -> ["get_star_ts" -> 1670074115, "star_index" -> 524380], "2" -> ["get_star_ts" -> 1670077096, "star_index" -> 535278]]], "global_score" -> 0, "id" -> 2570146, "last_star_ts" -> 1670077096, "local_score" -> 22, "name" -> "null", "stars" -> 6], "2573092" -> ["completion_day_level" -> [], "global_score" -> 0, "id" -> 2573092, "last_star_ts" -> 0, "local_score" -> 0, "name" -> "Nicky Nickell", "stars" -> 0], "2617254" -> ["completion_day_level" -> ["1" -> ["1" -> ["get_star_ts" -> 1670092589, "star_index" -> 588664], "2" -> ["get_star_ts" -> 1670092812, "star_index" -> 589407]], "2" -> ["1" -> ["get_star_ts" -> 1670094241, "star_index" -> 593959], "2" -> ["get_star_ts" -> 1670094695, "star_index" -> 595350]], "3" -> ["1" -> ["get_star_ts" -> 1670095235, "star_index" -> 596946], "2" -> ["get_star_ts" -> 1670095728, "star_index" -> 598431]], "4" -> ["1" -> ["get_star_ts" -> 1670130597, "star_index" -> 669354], "2" -> ["get_star_ts" -> 1670141884, "star_index" -> 723524]], "5" -> ["1" -> ["get_star_ts" -> 1670229783, "star_index" -> 1017755], "2" -> ["get_star_ts" -> 1670229917, "star_index" -> 1018365]]], "global_score" -> 0, "id" -> 2617254, "last_star_ts" -> 1670229917, "local_score" -> 30, "name" -> "lisdude", "stars" -> 10]], "owner_id" -> 2464202] rc
+@prop #171."last_fetch" 1670258411 rc
 ;;#171.("aliases") = {"Advent of Code 2022"}
-;;#171.("object_size") = {0, 0}
+;;#171.("object_size") = {11834, 1670227200}

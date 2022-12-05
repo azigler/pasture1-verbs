@@ -42,23 +42,25 @@ if (!this.dark && contents != {})
     render_integrated && player:tell(render_integrated);
     unintegrated && player:tell("You see ", $string_utils:title_list(unintegrated), " here.");
     players && player:tell($string_utils:title_listc(players), length(players) == 1 ? " " + $gender_utils:get_conj("is", players[1]) | " are", " here.");
-    "ZIG: add exits to room desc -- 12/01/2022";
-    if (this.exits == {})
-      player:tell("This room has no conventional exits.");
-    else
-      try
-        for exit in (this.exits)
-          try
-            player:tell(exit.name, " (", exit, ") leads to ", valid(exit.dest) ? exit.dest.name | "???", " (", exit.dest, ") via {", $string_utils:from_list(exit.aliases, ", "), "}.");
-          except (ANY)
-            player:tell("Bad exit or missing .dest property:  ", $string_utils:nn(exit));
-            continue exit;
-          endtry
-        endfor
-      except (E_TYPE)
-        player:tell("Bad .exits property. This should be a list of exit objects. Please fix this.");
-      endtry
-    endif
   endif
 endif
-"Last modified Sat Dec  3 03:29:41 2022 UTC by Saeed (#128).";
+"ZIG: add exits to room desc -- 12/01/2022";
+if (!this.dark)
+  if (this.exits == {})
+    player:tell("This room has no conventional exits.");
+  else
+    try
+      for exit in (this.exits)
+        try
+          player:tell(exit.name, " (", exit, ") leads to ", valid(exit.dest) ? exit.dest.name | "???", " (", exit.dest, ") via {", $string_utils:from_list(exit.aliases, ", "), "}.");
+        except (ANY)
+          player:tell("Bad exit or missing .dest property:  ", $string_utils:nn(exit));
+          continue exit;
+        endtry
+      endfor
+    except (E_TYPE)
+      player:tell("Bad .exits property. This should be a list of exit objects. Please fix this.");
+    endtry
+  endif
+endif
+"Last modified Mon Dec  5 17:59:07 2022 UTC by caranov (#133).";

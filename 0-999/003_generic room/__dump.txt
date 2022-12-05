@@ -51,8 +51,8 @@ for dude in (setremove(this:contents(), player))
 endfor
 .
 
-@verb #3:"match_exit" this none this
-@program #3:match_exit
+@verb #3:"match_exit(old)" this none this
+@program #3:match_exit(old)
 what = args[1];
 if (what)
   yes = $failed_match;
@@ -121,26 +121,28 @@ if ((!this.dark) && (contents != {}))
     render_integrated && player:tell(render_integrated);
     unintegrated && player:tell("You see ", $string_utils:title_list(unintegrated), " here.");
     players && player:tell($string_utils:title_listc(players), (length(players) == 1) ? " " + $gender_utils:get_conj("is", players[1]) | " are", " here.");
-    "ZIG: add exits to room desc -- 12/01/2022";
-    if (this.exits == {})
-      player:tell("This room has no conventional exits.");
-    else
-      try
-        for exit in (this.exits)
-          try
-            player:tell(exit.name, " (", exit, ") leads to ", valid(exit.dest) ? exit.dest.name | "???", " (", exit.dest, ") via {", $string_utils:from_list(exit.aliases, ", "), "}.");
-          except (ANY)
-            player:tell("Bad exit or missing .dest property:  ", $string_utils:nn(exit));
-            continue exit;
-          endtry
-        endfor
-      except (E_TYPE)
-        player:tell("Bad .exits property. This should be a list of exit objects. Please fix this.");
-      endtry
-    endif
   endif
 endif
-"Last modified Sat Dec  3 03:29:41 2022 UTC by Saeed (#128).";
+"ZIG: add exits to room desc -- 12/01/2022";
+if (!this.dark)
+  if (this.exits == {})
+    player:tell("This room has no conventional exits.");
+  else
+    try
+      for exit in (this.exits)
+        try
+          player:tell(exit.name, " (", exit, ") leads to ", valid(exit.dest) ? exit.dest.name | "???", " (", exit.dest, ") via {", $string_utils:from_list(exit.aliases, ", "), "}.");
+        except (ANY)
+          player:tell("Bad exit or missing .dest property:  ", $string_utils:nn(exit));
+          continue exit;
+        endtry
+      endfor
+    except (E_TYPE)
+      player:tell("Bad .exits property. This should be a list of exit objects. Please fix this.");
+    endtry
+  endif
+endif
+"Last modified Mon Dec  5 17:59:07 2022 UTC by caranov (#133).";
 .
 
 @verb #3:"@exits" none none none rxd
@@ -842,6 +844,28 @@ while (true)
 endwhile
 return ret;
 "Last modified Sat Dec  3 19:06:13 2022 UTC by caranov (#133).";
+.
+
+@verb #3:"match_exit" this none this rxd #133
+@program #3:match_exit
+{?what = ""} = args;
+if (!what)
+  return $failed_match;
+endif
+for i in (this.exits)
+  if ((valid(i) && valid(i.dest)) && ((what in i.name) == 1))
+    return i;
+  endif
+endfor
+return $failed_match;
+"Last modified Mon Dec  5 17:44:21 2022 UTC by caranov (#133).";
+.
+
+@verb #3:"opposite_direction" this none this rxd #133
+@program #3:opposite_direction
+{?what = ""} = args;
+return (what == "") ? $failed_match | (["north" -> "south", "east" -> "west", "south" -> "north", "west" -> "east", "up" -> "down", "down" -> "up", "northwest" -> "southeast", "northeast" -> "southwest", "southwest" -> "northeast", "southeast" -> "northwest", "in" -> "out", "out" -> "in"])[what];
+"Last modified Mon Dec  5 18:03:30 2022 UTC by caranov (#133).";
 .
 
 @prop #3."who_location_msg" "%T" rc

@@ -1,6 +1,6 @@
 @create $room named a tunnel through a colossal pile of rubble:a tunnel through a colossal pile of rubble
-;;#143.("entrances") = {#167}
-;;#143.("blessed_task") = 944003821
-;;#143.("exits") = {#169}
+;;#143.("entrances") = {#167, #173}
+;;#143.("blessed_task") = 2023148627
+;;#143.("exits") = {#169, #174}
 ;;#143.("aliases") = {"a tunnel through a colossal pile of rubble"}
 ;;#143.("object_size") = {950, 1670140800}
