@@ -6,8 +6,8 @@
 "(if no argument is provided, checks last 5-- entries. Each entry is considered a date, each date containing unlimited subentries.)";
 "Add, edit, remove, self explanatory. Only available to wizards.";
 if (!args)
-  player:tell("Numeric value not specified; reading last ", $changelog:entries_to(), " " + $ies("entry", $changelog:entries_to()) + ".");
-  return player:tell_lines($changelog:read());
+  player:tell("Numeric value not specified; reading last entry.");
+  return player:tell_lines($changelog:read(1));
 endif
 {what, ?subarg = ""} = args;
 if (toint(what) >= 1)
@@ -39,4 +39,4 @@ elseif (what in {"edit", "remove"})
   endfor
   player:tell(what + " successful.");
 endif
-"Last modified Mon Dec  5 17:51:33 2022 UTC by caranov (#133).";
+"Last modified Mon Dec  5 18:50:56 2022 UTC by caranov (#133).";

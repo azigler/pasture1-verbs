@@ -864,8 +864,8 @@ return $failed_match;
 @verb #3:"opposite_direction" this none this rxd #133
 @program #3:opposite_direction
 {?what = ""} = args;
-return (what == "") ? $failed_match | (["north" -> "south", "east" -> "west", "south" -> "north", "west" -> "east", "up" -> "down", "down" -> "up", "northwest" -> "southeast", "northeast" -> "southwest", "southwest" -> "northeast", "southeast" -> "northwest", "in" -> "out", "out" -> "in"])[what];
-"Last modified Mon Dec  5 18:03:30 2022 UTC by caranov (#133).";
+return `(what == "") ? $failed_match | (["north" -> "south", "east" -> "west", "south" -> "north", "west" -> "east", "up" -> "down", "down" -> "up", "northwest" -> "southeast", "northeast" -> "southwest", "southwest" -> "northeast", "southeast" -> "northwest", "in" -> "out", "out" -> "in"])[what] ! ANY => 0';
+"Last modified Mon Dec  5 18:10:20 2022 UTC by caranov (#133).";
 .
 
 @prop #3."who_location_msg" "%T" rc

@@ -1,0 +1,3 @@
+@create $room named Entering the magnificent realm of water:Entering the magnificent realm of water
+;;#178.("aliases") = {"Entering the magnificent realm of water"}
+;;#178.("object_size") = {0, 0}

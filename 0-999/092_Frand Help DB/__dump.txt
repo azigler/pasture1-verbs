@@ -55,6 +55,8 @@
 ;;#92.("@addsubmitted") = {"*forward*", "@submitted"}
 @prop #92."@rmsubmitted" {} r #2
 ;;#92.("@rmsubmitted") = {"*forward*", "@submitted"}
+@prop #92."changelog" {} rc
+;;#92.("changelog") = {"syntax:", "changelog, reads last entry.", "changelog <number>, reads last specified entries.", "changelog add, gives a multiline entryfield. Each line will be considered as a new item.", "changelog edit / remove, self explanatory, will display menus."}
 ;;#92.("index_cache") = {"frand-index"}
 ;;#92.("aliases") = {"Frand Help DB"}
 ;;#92.("description") = "A help database of the standard form in need of a description. See `help $generic_help'..."

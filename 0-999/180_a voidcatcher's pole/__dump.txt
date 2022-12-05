@@ -1,0 +1,7 @@
+@create $thing named a voidcatcher's pole:a voidcatcher's pole
+@prop #180."feature_ok" 1 rc
+@prop #180."endurance" 1000 rc
+@prop #180."soulshards" 1500.0 rc
+@prop #180."purifyingbeams" 1200.5 rc
+;;#180.("aliases") = {"a voidcatcher's pole"}
+;;#180.("object_size") = {0, 0}

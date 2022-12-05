@@ -61,3 +61,4 @@ if (exit_spec)
     $building_utils:make_exit(exits[2], other_room, player.location, do_recreate, exit_kind);
   endif
 endif
+"Last modified Mon Dec  5 18:49:54 2022 UTC by caranov (#133).";

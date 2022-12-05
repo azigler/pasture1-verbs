@@ -5,11 +5,11 @@
 "if(typeof(olist)==obj);";
 "olist = olist:contents();";
 "endif";
-typeof(olist) == OBJ && (olist = olist:contents());
+typeof(olist) == OBJ && (olist = {@this:contents(), @olist:contents()});
 try
   return $match_utils:match(string, olist);
 except e (ANY)
   player:tell("An error has been encountered: " + e[2]);
   return $string_utils:match_object(@{@args, this.location}[1..2], this);
 endtry
-"Last modified Sat Dec  3 14:38:31 2022 UTC by caranov (#133).";
+"Last modified Mon Dec  5 19:24:12 2022 UTC by caranov (#133).";

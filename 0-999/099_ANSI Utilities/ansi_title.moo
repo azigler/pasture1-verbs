@@ -15,4 +15,9 @@ afk_marker = "";
 if (args[1] in $global_chat.afk_list)
   afk_marker = " [AFK]";
 endif
-return name + afk_marker;
+poses = "";
+if (is_player(what = args[1]) && what.poses)
+  poses = "(" + $string_utils:from_list(what.poses, ", ") + ")";
+endif
+return name + afk_marker + poses;
+"Last modified Mon Dec  5 19:10:05 2022 UTC by caranov (#133).";
