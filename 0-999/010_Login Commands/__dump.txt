@@ -992,7 +992,7 @@ this.name_lookup_players = setremove(this.name_lookup_players, connection);
 @prop #10."lag_cutoff" 5 rc
 @prop #10."lag_exemptions" {} rc
 @prop #10."newted" {} ""
-@prop #10."current_numcommands" [#-82 -> 2] rc
+@prop #10."current_numcommands" [#-83 -> 2] rc
 @prop #10."max_numcommands" 20 rc
 @prop #10."temporary_newts" {} c
 @prop #10."downtimes" {} rc
