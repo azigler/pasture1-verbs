@@ -4,6 +4,7 @@ if (!caller_perms().wizard)
   raise(E_PERM);
 endif
 this:save_all_verbs();
+this:save_changelog_as_readme();
 if (!length(args))
   player:tell("Enter the commit message:");
   commit_msg = $command_utils:read();
