@@ -3,5 +3,6 @@
 @prop #180."endurance" 1000 rc
 @prop #180."soulshards" 1500.0 rc
 @prop #180."purifyingbeams" 1200.5 rc
+@prop #180."soulseakerbeam" 350 rc
 ;;#180.("aliases") = {"a voidcatcher's pole"}
 ;;#180.("object_size") = {969, 1670313601}

@@ -844,7 +844,7 @@ return who.wizard;
 
 @prop #134."cron_task" 1151250317 ""
 @prop #134."cron_tasks" {} ""
-;;#134.("cron_tasks") = {{7355778900217406724, 1670348400, -4, -1, -1, -1, -1, #128, #135, "keep_alive", {}}, {3666848860406423731, 1670342400, {0}, -4, -1, -1, -1, #2, #152, "commit_verbs", {"Sync latest via cron"}}}
+;;#134.("cron_tasks") = {{7355778900217406724, 1670348640, -4, -1, -1, -1, -1, #128, #135, "keep_alive", {}}, {3666848860406423731, 1670342400, {0}, -4, -1, -1, -1, #2, #152, "commit_verbs", {"Sync latest via cron"}}}
 @prop #134."timer_tasks" {} ""
 @prop #134."timer_task" 0 ""
 @prop #134."special_cron_tasks" {} rc
