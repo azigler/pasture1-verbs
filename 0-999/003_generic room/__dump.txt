@@ -321,12 +321,9 @@ endif
 if (is_player(object) && object.followers)
   followers = object:get_all_followers();
   res = (followers:length() > 1) ? 1 | 0;
-  object:drag_followers(res);
-  fork (0)
-    (res == 1) && object.location:announce_all(($string_utils:title_list(followers) + " follow in behind ") + object.name);
-  endfork
+  object:drag_followers(res, res);
 endif
-"Last modified Sat Dec  3 19:52:09 2022 UTC by caranov (#133).";
+"Last modified Mon Dec  5 20:18:44 2022 UTC by caranov (#133).";
 .
 
 @verb #3:"exitfunc" this none this
