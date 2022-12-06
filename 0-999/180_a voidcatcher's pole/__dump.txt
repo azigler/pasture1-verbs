@@ -1,4 +1,5 @@
 @create $thing named a voidcatcher's pole:a voidcatcher's pole
+@verb #180:"damage" this none this
 @prop #180."feature_ok" 1 rc
 @prop #180."endurance" 1000 rc
 @prop #180."soulshards" 1500.0 rc
