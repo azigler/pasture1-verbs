@@ -673,7 +673,7 @@ else
   player:tell("I don't know which direction `", verb, "' you mean.");
 endif
 return 1;
-"Last modified Sat Dec  3 16:46:09 2022 UTC by caranov (#133).";
+"Last modified Tue Dec  6 09:36:19 2022 UTC by caranov (#133).";
 .
 
 @verb #3:"room_announce*_all_but" this none this
@@ -810,7 +810,7 @@ if (valid(exit = this:match_exit(command)))
 else
   return 0;
 endif
-"Last modified Sat Dec  3 17:15:21 2022 UTC by caranov (#133).";
+"Last modified Tue Dec  6 09:38:54 2022 UTC by caranov (#133).";
 .
 
 @verb #3:"get_nearby_rooms" this none this rxd #133

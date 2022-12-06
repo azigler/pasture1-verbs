@@ -1,6 +1,6 @@
 @create $room named Cavern of tests.:Cavern of tests.
 ;;#141.("entrances") = {#142, #174, #176}
-;;#141.("blessed_task") = 468402982
+;;#141.("blessed_task") = 706790852
 ;;#141.("exits") = {#167, #172, #177}
 ;;#141.("aliases") = {"Cavern of tests."}
 ;;#141.("object_size") = {898, 1670054400}

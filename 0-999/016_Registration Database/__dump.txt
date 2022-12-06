@@ -225,7 +225,7 @@ player:tell("Search over.  ", total, " matches found.");
 @prop #16." l" {} ""
 ;;#16.(" l") = {"i", "", {"lindsey@email.com", "lisdude@email.com"}, {{{#146, ""}}, {{#139, ""}}}}
 ;;#16.("node_perms") = ""
-;;#16.(" ") = {"", "sl", {"rain@email.com", "caranov@email.com"}, {{{#147, ""}}, {{#133, ""}}}}
+;;#16.(" ") = {"", "sl", {"grub@gmail.com", "rain@email.com", "caranov@email.com"}, {{{#181, "sorry, secondary person to fix a coding issue. will delete."}}, {{#147, ""}}, {{#133, ""}}}}
 ;;#16.("aliases") = {"Registration Database"}
 ;;#16.("description") = "A generic `database' (well, really more like a string-indexed array if you want the truth...). See `help $generic_db' for details."
 ;;#16.("object_size") = {13392, 1641541193}

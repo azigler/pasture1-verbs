@@ -1974,6 +1974,13 @@ player:tell("Done.");
 "Last modified Sat Dec  3 18:51:34 2022 UTC by Saeed (#128).";
 .
 
+@verb #57:"@unfreeze" any any any rxd #133
+@program #57:@unfreeze
+$you:say_action("%N %<breaks> %p invisible bonds.");
+this.roundtime = 0;
+"Last modified Tue Dec  6 09:48:03 2022 UTC by caranov (#133).";
+.
+
 @prop #57."newt_victim_msg" "" rc
 @prop #57."newt_msg" "%n @newts %d (%[#d])" rc
 @prop #57."public_identity" #-1 rc

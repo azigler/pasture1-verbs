@@ -13,4 +13,4 @@ else
   player:tell("I don't know which direction `", verb, "' you mean.");
 endif
 return 1;
-"Last modified Sat Dec  3 16:46:09 2022 UTC by caranov (#133).";
+"Last modified Tue Dec  6 09:36:19 2022 UTC by caranov (#133).";

@@ -176,7 +176,9 @@ return pass(@args);
 ;;#39.(" c") = {"", "", {"caranov", "Core"}, {#133, #98}}
 @prop #39." L" {} r
 ;;#39.(" L") = {"i", "", {"Lindsey", "lisdude"}, {#146, #139}}
-;;#39.(" ") = {"", "HenScL", {"rain", "Zig", "programmer", "generic"}, {#147, #2, #98, #98}}
+@prop #39." g" {} r
+;;#39.(" g") = {"", "", {"grub", "generic"}, {#181, #98}}
+;;#39.(" ") = {"", "HenScLg", {"rain", "Zig", "programmer"}, {#147, #2, #98}}
 ;;#39.("aliases") = {"player_db", "plyrdb", "pdb"}
 ;;#39.("description") = {"A database containing all player names and aliases.  ", "See `help $player_db' for more information."}
 ;;#39.("object_size") = {12464, 1641541193}

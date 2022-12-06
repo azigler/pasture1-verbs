@@ -159,13 +159,13 @@ return this.name + " doesn't understand %%from:";
 .
 
 @prop #29."keyword" "PROGRAMMER" rc
-;;#29.("last_msg_date") = 1670002765
+;;#29.("last_msg_date") = 1670320220
 ;;#29.("messages_going") = {{0, {{1, {1541028136, #2, #98, "Anti-Wizard"}}}}}
 ;;#29.("moderated") = 1
 ;;#29.("mail_notify") = {#2}
 ;;#29.("mail_forward") = {}
-;;#29.("last_used_time") = 1670002765
-;;#29.("messages") = {{2, {1669930305, #2, #128, "Saeed"}}, {3, {1669955945, #2, #129, "Skye"}}, {4, {1669962694, #2, #133, "caranov"}}, {5, {1669966883, #2, #139, "lisdude"}}, {6, {1670002611, #2, #146, "Lindsey"}}, {7, {1670002765, #2, #147, "rain"}}}
+;;#29.("last_used_time") = 1670320220
+;;#29.("messages") = {{2, {1669930305, #2, #128, "Saeed"}}, {3, {1669955945, #2, #129, "Skye"}}, {4, {1669962694, #2, #133, "caranov"}}, {5, {1669966883, #2, #139, "lisdude"}}, {6, {1670002611, #2, #146, "Lindsey"}}, {7, {1670002765, #2, #147, "rain"}}, {8, {1670320220, #133, #181, "grub"}}}
 ;;#29.("aliases") = {"New-Prog-Log", "New_Prog_Log", "NPL"}
 ;;#29.("description") = "Record of who's been made a @programmer."
 ;;#29.("object_size") = {9347, 1669929999}
