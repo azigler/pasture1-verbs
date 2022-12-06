@@ -1977,8 +1977,8 @@ player:tell("Done.");
 @verb #57:"@unfreeze" any any any rxd #133
 @program #57:@unfreeze
 $you:say_action("%N %<breaks> %p invisible bonds.");
-this.roundtime = 0;
-"Last modified Tue Dec  6 09:48:03 2022 UTC by caranov (#133).";
+this.roundtime = 0.0;
+"Last modified Tue Dec  6 17:10:32 2022 UTC by caranov (#133).";
 .
 
 @prop #57."newt_victim_msg" "" rc

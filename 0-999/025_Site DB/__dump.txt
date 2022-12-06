@@ -356,7 +356,7 @@ this.prune_stop = "zzz";
 @prop #25." so" {} ""
 ;;#25.(" so") = {"", "", {"solucaonetwork.com", "socal.res.rr.com"}, {{"dinamico-131-255-054-023"}, {"cpe-172-116-51-187"}}}
 @prop #25." 37.238.28.2" {} ""
-;;#25.(" 37.238.28.2") = {"", "", {"37.238.28.28", "37.238.28.24"}, {{#133}, {#133}}}
+;;#25.(" 37.238.28.2") = {"", "", {"37.238.28.22", "37.238.28.28", "37.238.28.24"}, {{#181, #133}, {#133}, {#133}}}
 ;;#25.("node_perms") = ""
 ;;#25.(" ") = {"", "rcs13", {"net", "austtx.sbcglobal.net", "lightspeed.austtx.sbcglobal.net", "fidnet.com", "dinamico-131-255-054-023.solucaonetwork.com"}, {{"sbcglobal"}, {"lightspeed"}, {"104-52-62-74"}, {"149-76-213-76"}, {#129}}}
 ;;#25.("aliases") = {"sitedb", "site", "db"}
