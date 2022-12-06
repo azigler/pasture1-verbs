@@ -139,10 +139,11 @@ if (!caller_perms().wizard)
 endif
 changelog = $changelog:read();
 handle = file_open("verbs/README.md", "w-tn");
+file_writeline(handle, "# pasture1 changelog");
 for line in (changelog)
   yin();
   if (length(line) < 12)
-    file_writeline(handle, "# " + line);
+    file_writeline(handle, "## " + line);
   else
     file_writeline(handle, "- " + line);
   endif
