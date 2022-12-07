@@ -1,0 +1,4 @@
+@create $egg named egg:generic egg,egg
+;;#237.("aliases") = {"generic egg", "egg"}
+;;#237.("description") = {"This is the egg."}
+;;#237.("object_size") = {0, 0}

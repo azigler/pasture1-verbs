@@ -8,3 +8,4 @@ while (length(this.contents) < this.slots)
   move(egg, this);
 endwhile
 debug:tell(" -> Created " + tostr(length(this.contents)) + " " + $s("egg", this.slots) + " and moved it inside.");
+"Last modified Wed Dec  7 13:35:15 2022 UTC by caranov (#133).";

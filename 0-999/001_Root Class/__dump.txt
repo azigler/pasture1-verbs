@@ -80,7 +80,13 @@ endif
 @verb #1:"match" this none this
 @program #1:match
 c = this:contents();
-return $string_utils:match(args[1], c, "name", c, "aliases");
+try
+  return $match_utils:match(args[1], c);
+except e (ANY)
+  #133:tell(("error with " + verb) + ".");
+  return $string_utils:match(args[1], c, "name", c, "aliases");
+endtry
+"Last modified Wed Dec  7 13:50:03 2022 UTC by caranov (#133).";
 .
 
 @verb #1:"match_object" this none this
