@@ -51,4 +51,4 @@ return help;
 ;;#101.("index_cache") = {"ansi-index"}
 ;;#101.("aliases") = {"ANSI Help", "ah"}
 ;;#101.("description") = "A help database of the standard form in need of a description. See `help $generic_help'..."
-;;#101.("object_size") = {26826, 1669929999}
+;;#101.("object_size") = {26826, 1670400000}

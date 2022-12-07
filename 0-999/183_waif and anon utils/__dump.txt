@@ -97,4 +97,4 @@ player:tell("Total: ", total, " ", (total == 1) ? "property" | "properties", (ta
 
 ;;#183.("aliases") = {"waif and anon utils"}
 ;;#183.("description") = "This is a placeholder parent for all the $..._utils packages, to more easily find them and manipulate them. At present this object defines no useful verbs or properties. (Filfre.)"
-;;#183.("object_size") = {4431, 1669967999}
+;;#183.("object_size") = {4761, 1670400000}

@@ -1,9 +1,18 @@
 @create $thing named a voidcatcher's pole:a voidcatcher's pole
 @verb #180:"damage" this none this
+@program #180:damage
+loc = this.location;
+(isa(loc, $room) == 0) && (loc = loc.location);
+loc:announce_all(this:title() + " jerks and shudders as whaling souls burst from within, spectral claws and nashing teeth gradually nawing away at the great bones of Xahrin.");
+this.soulshards = this.soulshards - frandom(140.0, 180.0);
+this.endurance = this.endurance - frandom(65.0, 85.0);
+"Last modified Wed Dec  7 07:18:17 2022 UTC by caranov (#133).";
+.
+
 @prop #180."feature_ok" 1 rc
-@prop #180."endurance" 1000 rc
+@prop #180."endurance" 1000.0 rc
 @prop #180."soulshards" 1500.0 rc
 @prop #180."purifyingbeams" 1200.5 rc
-@prop #180."soulseakerbeam" 350 rc
+@prop #180."soulseakerbeam" 350.0 rc
 ;;#180.("aliases") = {"a voidcatcher's pole"}
 ;;#180.("object_size") = {969, 1670313601}

@@ -330,4 +330,4 @@ endif
 ;;#53.("help_msg") = {"These routines are used when locking objects, and when testing an object's lock before allowing use (such as in an exit).", "", ":parse_keyexp   (string keyexpression, object player)", "        => returns an object or list for the new key as defined by the", "           keyexpression or a string describing the error if it failed.", "", ":eval_key       (LIST|OBJ key, testobject)", "        => returns true if the given testobject satisfies the key.", "", ":unparse_key    (LIST|OBJ key)", "        => returns a string describing the key in english/moo-code terms.", "", "For more information on keys and locking, read `help locking', `help keys', and `help @lock'."}
 ;;#53.("aliases") = {"lock utilities"}
 ;;#53.("description") = "This the lock utilities package, used by the MOOwide locking mechanisms. See `help $lock_utils' for more details."
-;;#53.("object_size") = {13652, 1669929999}
+;;#53.("object_size") = {13652, 1670400000}

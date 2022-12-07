@@ -1720,4 +1720,4 @@ endif
 ;;#40.("help") = #85
 ;;#40.("aliases") = {"Generic Mail Receiving Player"}
 ;;#40.("description") = "A player with the ability to see things in [red]c[bold][yellow]o[green]l[blue]o[purple]r[normal]."
-;;#40.("object_size") = {99754, 1669929999}
+;;#40.("object_size") = {100170, 1670400000}

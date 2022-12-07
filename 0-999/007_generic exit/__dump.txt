@@ -166,4 +166,4 @@ args[1]:announce_all_but({what}, msg);
 @prop #7."oleave_msg" 0 rc
 @prop #7."leave_msg" 0 rc
 ;;#7.("aliases") = {"generic exit"}
-;;#7.("object_size") = {10849, 1669929999}
+;;#7.("object_size") = {11036, 1670400000}

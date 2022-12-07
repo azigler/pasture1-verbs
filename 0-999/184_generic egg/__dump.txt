@@ -1,4 +1,4 @@
 @create $thing named generic egg:generic egg,egg
 ;;#184.("aliases") = {"generic egg", "egg"}
 ;;#184.("description") = {"This is the egg."}
-;;#184.("object_size") = {0, 0}
+;;#184.("object_size") = {765, 1670400000}

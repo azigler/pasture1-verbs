@@ -3119,4 +3119,4 @@ endif
 ;;#6.("allowed_roundtime_commands") = {"chat", "say", "emote", "look", "quit", "afk", "@unfreeze"}
 ;;#6.("aliases") = {"generic player"}
 ;;#6.("description") = "You see a player who should type '@describe me as ...'."
-;;#6.("object_size") = {132036, 1669929999}
+;;#6.("object_size") = {162725, 1670400000}

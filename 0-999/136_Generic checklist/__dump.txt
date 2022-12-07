@@ -55,4 +55,4 @@ player:tell_lines({"Uncompleted tasks,", @uncompleted, "----", "completed tasks,
 @prop #136."elements" {} rc
 @prop #136."completed" {} rc
 ;;#136.("aliases") = {"Generic checklist"}
-;;#136.("object_size") = {3888, 1669967999}
+;;#136.("object_size") = {4148, 1670400000}

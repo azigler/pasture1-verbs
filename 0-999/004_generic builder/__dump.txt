@@ -968,4 +968,4 @@ player:tell(objects:length(), " objects found.");
 ;;#4.("size_quota") = {50000, 0, 0, 1}
 ;;#4.("aliases") = {"generic builder"}
 ;;#4.("description") = "You see a player who should type '@describe me as ...'."
-;;#4.("object_size") = {48748, 1669929999}
+;;#4.("object_size") = {54970, 1670400000}

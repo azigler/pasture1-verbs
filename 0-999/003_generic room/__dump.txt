@@ -879,4 +879,4 @@ return `(what == "") ? $failed_match | (["north" -> "south", "east" -> "west", "
 @prop #3."dark" 0 rc
 @prop #3."ctype" 3 rc
 ;;#3.("aliases") = {"generic room"}
-;;#3.("object_size") = {43072, 1669929999}
+;;#3.("object_size") = {50604, 1670400000}

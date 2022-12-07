@@ -458,4 +458,4 @@ endif
 ;;#49.("blessed_task") = 665095404
 ;;#49.("aliases") = {"Verb Editor", "vedit", "verbedit", "verb edit"}
 ;;#49.("description") = {}
-;;#49.("object_size") = {21037, 1669929999}
+;;#49.("object_size") = {24436, 1670400000}

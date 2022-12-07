@@ -486,4 +486,4 @@ return $string_utils:(verb)(this);
 @prop #1."aliases" {} rc
 @prop #1."description" "" rc
 @prop #1."object_size" {} r #36
-;;#1.("object_size") = {32226, 1669929999}
+;;#1.("object_size") = {32944, 1670400000}

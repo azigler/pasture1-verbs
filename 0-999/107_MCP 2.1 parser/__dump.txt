@@ -158,4 +158,4 @@ return datakey;
 @prop #107."next_datakey" 10271 r
 @prop #107."unquoted_string" "^[]a-zA-Z0-9-%~`!@#$^&()=+{}[|';?/><.,]+$" r #2
 ;;#107.("aliases") = {"MCP 2.1 parser", "parser"}
-;;#107.("object_size") = {6944, 1669929999}
+;;#107.("object_size") = {6944, 1670400000}

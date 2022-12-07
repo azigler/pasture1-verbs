@@ -541,4 +541,4 @@ player.location:announce_all($ansi_utils:ansi_title(player), argstr);
 ;;#100.("help") = #101
 ;;#100.("aliases") = {"ANSI PC", "apc"}
 ;;#100.("description") = "A player with the ability to see things in [red]c[bold][yellow]o[green]l[blue]o[purple]r[normal]."
-;;#100.("object_size") = {29845, 1669929999}
+;;#100.("object_size") = {30416, 1670400000}

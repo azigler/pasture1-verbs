@@ -1,4 +1,4 @@
 @create $root_class named Generic Area:Generic Area,Generic,Area
 @prop #112."time_factor" 0.0 rc
 ;;#112.("aliases") = {"Generic Area", "Generic", "Area"}
-;;#112.("object_size") = {523, 1669967999}
+;;#112.("object_size") = {523, 1670400000}

@@ -244,4 +244,4 @@ endif
 ;;#132.("test_log") = {4, {{1669962529, 2, "Hello."}, {1669962544, 2, "Hello."}, {1669962573, 2, "Hello."}, {1669962586, 2, "Hello."}}}
 ;;#132.("aliases") = {"logger"}
 ;;#132.("description") = "The logger object stores messages for many different logs, and controls who can view those logs. Type \"help $logger\" for more information."
-;;#132.("object_size") = {15670, 1669967999}
+;;#132.("object_size") = {15670, 1670400000}

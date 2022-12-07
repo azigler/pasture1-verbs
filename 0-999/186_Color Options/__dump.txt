@@ -2,4 +2,4 @@
 @prop #186."preset_color_options" {} rc
 ;;#186.("preset_color_options") = {{"exits", "cyan"}, {"saysemotes", "bright cyan"}, {"socials", "bright cyan"}, {"rooms", "cyan"}}
 ;;#186.("aliases") = {"Color Options"}
-;;#186.("object_size") = {0, 0}
+;;#186.("object_size") = {1106, 1670400000}

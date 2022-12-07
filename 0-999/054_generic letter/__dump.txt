@@ -37,4 +37,4 @@ endif
 ;;#54.("take_failed_msg") = "This is a private letter."
 ;;#54.("aliases") = {"generic letter"}
 ;;#54.("description") = "Some writing on the letter explains that you should 'read letter', and when you've finished, 'burn letter'."
-;;#54.("object_size") = {3699, 1669929999}
+;;#54.("object_size") = {3731, 1670400000}

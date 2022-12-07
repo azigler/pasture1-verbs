@@ -28,4 +28,4 @@
 ;;#116.("index_cache") = {"mcp-index"}
 ;;#116.("aliases") = {"MCP Help Database"}
 ;;#116.("description") = "A help database of the standard form in need of a description. See `help $generic_help'..."
-;;#116.("object_size") = {23287, 1669929999}
+;;#116.("object_size") = {23287, 1670400000}

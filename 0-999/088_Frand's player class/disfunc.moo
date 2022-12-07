@@ -4,6 +4,7 @@
 if (valid(cp = caller_perms()) && caller != this && !$perm_utils:controls(cp, this))
   return E_PERM;
 endif
+$global_chat:afk();
 pass(@args);
 "This is forked off to protect :disfunc from buggy :player_disconnected verbs.";
 set_task_perms(this);
@@ -16,3 +17,4 @@ fork (max(0, $login:current_lag()))
     endtry
   endfor
 endfork
+"Last modified Wed Dec  7 07:14:05 2022 UTC by caranov (#133).";

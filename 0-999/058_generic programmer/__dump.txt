@@ -1952,4 +1952,4 @@ endif
 ;;#58.("size_quota") = {50000, 0, 0, 1}
 ;;#58.("aliases") = {"generic", "programmer"}
 ;;#58.("description") = "You see a player who is too experienced to have any excuse for not having a description."
-;;#58.("object_size") = {86428, 1669929999}
+;;#58.("object_size") = {91197, 1670400000}

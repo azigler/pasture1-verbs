@@ -63,4 +63,4 @@ endif
 ;;#102.("extras") = {"all", "none"}
 ;;#102.("aliases") = {"ANSI Options", "ao"}
 ;;#102.("description") = "An option package for controlling and customizing the ANSI PC."
-;;#102.("object_size") = {5739, 1669929999}
+;;#102.("object_size") = {5739, 1670400000}
