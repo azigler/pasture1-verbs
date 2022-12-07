@@ -1,7 +1,7 @@
 @create $room named an infinite expanse:an infinite expanse
 @verb #175:"cast" any any any rxd
 @program #175:cast
-if (maphaskey(this.voidcatchers, player) == 0)
+if (this:has_pole(player) == 0)
   player:tell("Baring the roar of thunder and raging rivers. \"You were never fated to be a voidcatchr without a cznae. Depart this land, at once!\"");
   $you:say_action("The darkness churns and roils as shadowy tentacles burst from the earth. They solidify into long, furiously lashing whips that send %N flying high above the void.");
   ref = 0;
@@ -18,7 +18,7 @@ if (maphaskey(this.voidcatchers, player) == 0)
 else
   this:_cast();
 endif
-"Last modified Mon Dec  5 20:12:40 2022 UTC by caranov (#133).";
+"Last modified Wed Dec  7 17:43:13 2022 UTC by caranov (#133).";
 .
 
 @verb #175:"enterfunc" this none this
@@ -70,7 +70,7 @@ this.voidcatchers = mapdelete(this.voidcatchers, player);
 @prop #175."voidcatchers" [] rc
 ;;#175.("entrances") = {#177}
 ;;#175.("blessed_object") = #133
-;;#175.("blessed_task") = 1613378414
+;;#175.("blessed_task") = 130976085
 ;;#175.("exits") = {#176}
 ;;#175.("aliases") = {"an infinite expanse"}
 ;;#175.("description") = "Little can be seen through the heavy fog blanketing this area, blurry and indistinct shapes hidden within the pitch black darkness that has enveloped this realm. All feeling seems to vanish from one's limbs as soon as they are encircled by the fog. Latent energies slumber within the surrounding dark. What is the potential a voidbarer could cokes?"

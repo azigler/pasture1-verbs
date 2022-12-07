@@ -10,6 +10,7 @@ plyr = $string_utils:match_player(argstr);
 if ($command_utils:player_match_failed(plyr, argstr))
   return;
 endif
+start = ftime(1);
 totals = ["lines" -> 0, "verbs" -> 0, "objects" -> {}];
 for o in [#0..max_object()]
   if (!valid(o) || length(verbs(o)) == 0)
@@ -49,5 +50,6 @@ player:tell("Object Breakdown:");
 player:tell(l);
 player:tell_lines_suspended(breakdown);
 player:tell(l);
-player:tell("Done.");
-"Last modified Sat Dec  3 18:51:34 2022 UTC by Saeed (#128).";
+finished = ftime(1) - start;
+player:tell("Done.  [finished in ", floatstr(finished, 4), " seconds]");
+"Last modified Wed Dec  7 17:45:04 2022 UTC by Saeed (#128).";

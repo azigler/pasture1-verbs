@@ -48,6 +48,8 @@ if (tasks)
     endif
   endfor
   player:notify("-----------------------------------------------------------------");
+  player:notify(tostr("Total: ", length(tasks), " ", $s("task", length(tasks)), "."));
 else
   player:notify("No tasks.");
 endif
+"Last modified Wed Dec  7 17:39:27 2022 UTC by Saeed (#128).";

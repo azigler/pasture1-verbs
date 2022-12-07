@@ -31,7 +31,7 @@ while (true)
   else
     newtext = $command_utils:read();
   endif
-  player:tell(typeof(newtext) == LIST ? $string_utils:from_list(newtext) | newtext, "?");
+  player:tell(typeof(newtext) == LIST ? $string_utils:from_list(newtext, ", ") | newtext, "?");
   if ($command_utils:yes_or_no())
     $socials.socials[name][order[choice]] = newtext;
     player:tell("Successfully set.");
@@ -41,3 +41,4 @@ while (true)
     continue;
   endif
 endwhile
+"Last modified Wed Dec  7 16:12:59 2022 UTC by caranov (#133).";

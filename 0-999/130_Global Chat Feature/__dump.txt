@@ -4,7 +4,10 @@
 text = argstr;
 for user in (connected_players())
   user:tell(((player:title() + " says to the whole MOO, \"") + text) + "\"");
+  (user != player) && user:add_replay_entry({"general", "chat"}, ((player:title() + " says to the whole MOO, \"") + text) + "\"");
 endfor
+player:add_replay_entry({"general", "chat"}, ("You say to the whole MOO, \"" + text) + "\"");
+"Last modified Wed Dec  7 17:00:57 2022 UTC by caranov (#133).";
 .
 
 @verb #130:"afk brb @afk @brb" any none none rxd #2
@@ -24,7 +27,7 @@ endif
 .
 
 @prop #130."afk_list" {} rc
-;;#130.("afk_list") = {#139, #146, #147, #133}
+;;#130.("afk_list") = {#139, #147, #146}
 ;;#130.("feature_verbs") = {}
 ;;#130.("aliases") = {"Global Chat Feature"}
 ;;#130.("description") = "This is the Generic Feature Object.  It is not meant to be used as a feature object itself, but is handy for making new feature objects."

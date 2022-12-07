@@ -672,8 +672,8 @@ poses = "";
 if (is_player(what = args[1]) && what.poses)
   poses = ("(" + $string_utils:from_list(what.poses, ", ")) + ")";
 endif
-return (name + afk_marker) + poses;
-"Last modified Mon Dec  5 19:10:05 2022 UTC by caranov (#133).";
+return ($string_utils:capitalize(name) + afk_marker) + poses;
+"Last modified Wed Dec  7 17:46:47 2022 UTC by caranov (#133).";
 .
 
 @verb #99:"strip_black" this none this

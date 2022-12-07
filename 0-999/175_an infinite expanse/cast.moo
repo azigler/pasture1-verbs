@@ -1,6 +1,6 @@
 #175:cast   any any any rxd
 
-if (maphaskey(this.voidcatchers, player) == 0)
+if (this:has_pole(player) == 0)
   player:tell("Baring the roar of thunder and raging rivers. \"You were never fated to be a voidcatchr without a cznae. Depart this land, at once!\"");
   $you:say_action("The darkness churns and roils as shadowy tentacles burst from the earth. They solidify into long, furiously lashing whips that send %N flying high above the void.");
   ref = 0;
@@ -17,4 +17,4 @@ if (maphaskey(this.voidcatchers, player) == 0)
 else
   this:_cast();
 endif
-"Last modified Mon Dec  5 20:12:40 2022 UTC by caranov (#133).";
+"Last modified Wed Dec  7 17:43:13 2022 UTC by caranov (#133).";

@@ -2801,7 +2801,7 @@ return ret;
 {social, ?target = 0} = args;
 if (target && (typeof(target) == STR))
   target = $string_utils:match_player(target, this.location);
-  if ($command_utils:object_match_failed(target, args[2]))
+  if (target in {#-1, #-2, #-3})
     return this:tell("You do not see that here.");
   endif
 endif
@@ -2817,6 +2817,7 @@ else
   this.location:announce_all_but({this, target}, $socials:format_social("publictarget", social["publictargetmsg"], target));
   return target:tell($socials:format_social("target", social["targetmsg"], target));
 endif
+"Last modified Wed Dec  7 17:41:38 2022 UTC by caranov (#133).";
 .
 
 @verb #6:"@soc*ials" any any any rxd #133
@@ -2942,10 +2943,10 @@ if (((message:length() > 2) && (message[1]:length() > 1)) && (message[2]:length(
   if (message[1][1] == "~")
     emotion = message[1][2..$];
   elseif (message[1][1] == "!")
-    tone = message[1][2..$];
+    tone = {message[1][2..$], "at "};
   endif
   if (message[2][1] == "!")
-    tone = message[2][2..$];
+    tone = {message[2][2..$], "at "};
   endif
   for i, ind in (message[1..2])
     if (i[1] in {"~", "!"})
@@ -2968,8 +2969,9 @@ if (tone[1] == "say")
 endif
 {tone, prep} = tone;
 ((tone[$] != "s") && (tone = ("%<" + tone) + "s>")) || (tone = ("%<" + tone) + ">");
-$you:say_action(((((("%N " + (emotion ? emotion + " " | "")) + tone) + (target ? (" " + prep) + "%d" | "")) + ", \"") + $string_utils:from_list(message, " ")) + "\"");
-"Last modified Tue Dec  6 23:41:52 2022 UTC by Lindsey (#146).";
+$you:say_action(msg = ((((("%N " + (emotion ? emotion + " " | "")) + tone) + (target ? (" " + prep) + "%d" | "")) + ", \"") + $string_utils:from_list(message, " ")) + "\"");
+this:add_replay_entry({"general", "say"}, $string_utils:pronoun_sub(msg));
+"Last modified Wed Dec  7 17:30:15 2022 UTC by caranov (#133).";
 .
 
 @verb #6:"yell" any any any rxd #133
@@ -3066,7 +3068,51 @@ endif
 "Last modified Tue Dec  6 09:31:46 2022 UTC by caranov (#133).";
 .
 
-@verb #6:"freee" none none none rxd #133
+@verb #6:"replay" any any any rxd #133
+@program #6:replay
+{?category = "general", ?to = 15} = args;
+if (toint(category) != 0)
+  {to = category, category = "general"};
+endif
+{what = category, to = toint(to)};
+if ((what in mapkeys(this.replay_history)) == 0)
+  category = what = "general";
+endif
+for i in (mapkeys(this.replay_history))
+  if (index(i, category))
+    category = this.replay_history[i];
+    break;
+  endif
+endfor
+player:tell(what + " history:");
+(to > length(category)) && (to = length(category) - 1);
+for i in (category[($ - to) + 1..$])
+  player:tell(((i[2] + ". ") + $time_utils:english_time(abs(time() - i[1]))) + " ago.");
+endfor
+return 1;
+"Last modified Wed Dec  7 17:12:28 2022 UTC by caranov (#133).";
+.
+
+@verb #6:"add_replay_entry" this none this rxd #133
+@program #6:add_replay_entry
+if ((this in connected_players()) == 0)
+  return;
+endif
+{?categories = {"general"}, ?message = ""} = args;
+(typeof(categories) == STR) && (categories = {categories});
+for category in (categories)
+  if (!maphaskey(this.replay_history, category))
+    this.replay_history[category] = {message};
+  endif
+  if (this.replay_history[category]:length() >= 100)
+    this.replay_history[category] = {};
+  endif
+  this.replay_history[category] = {@this.replay_history[category], {time(), message}};
+endfor
+return 1;
+"Last modified Wed Dec  7 16:51:12 2022 UTC by caranov (#133).";
+.
+
 @prop #6."features" {} r #36
 @prop #6."previous_connection" 0 ""
 @prop #6."email_address" "" ""
@@ -3117,6 +3163,7 @@ endif
 @prop #6."roundtime" 0.0 rc
 @prop #6."allowed_roundtime_commands" {} rc
 ;;#6.("allowed_roundtime_commands") = {"chat", "say", "emote", "look", "quit", "afk", "@unfreeze"}
+@prop #6."replay_history" ["chat" -> {}, "general" -> {}, "say" -> {}] rc
 ;;#6.("aliases") = {"generic player"}
 ;;#6.("description") = "You see a player who should type '@describe me as ...'."
 ;;#6.("object_size") = {162725, 1670400000}

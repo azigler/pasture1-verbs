@@ -26,10 +26,10 @@ if (message:length() > 2 && message[1]:length() > 1 && message[2]:length() > 1)
   if (message[1][1] == "~")
     emotion = message[1][2..$];
   elseif (message[1][1] == "!")
-    tone = message[1][2..$];
+    tone = {message[1][2..$], "at "};
   endif
   if (message[2][1] == "!")
-    tone = message[2][2..$];
+    tone = {message[2][2..$], "at "};
   endif
   for i, ind in (message[1..2])
     if (i[1] in {"~", "!"})
@@ -52,5 +52,6 @@ if (tone[1] == "say")
 endif
 {tone, prep} = tone;
 tone[$] != "s" && (tone = "%<" + tone + "s>") || (tone = "%<" + tone + ">");
-$you:say_action("%N " + (emotion ? emotion + " " | "") + tone + (target ? " " + prep + "%d" | "") + ", \"" + $string_utils:from_list(message, " ") + "\"");
-"Last modified Tue Dec  6 23:41:52 2022 UTC by Lindsey (#146).";
+$you:say_action(msg = "%N " + (emotion ? emotion + " " | "") + tone + (target ? " " + prep + "%d" | "") + ", \"" + $string_utils:from_list(message, " ") + "\"");
+this:add_replay_entry({"general", "say"}, $string_utils:pronoun_sub(msg));
+"Last modified Wed Dec  7 17:30:15 2022 UTC by caranov (#133).";

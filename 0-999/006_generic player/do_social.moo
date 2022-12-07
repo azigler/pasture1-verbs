@@ -4,7 +4,7 @@
 {social, ?target = 0} = args;
 if (target && typeof(target) == STR)
   target = $string_utils:match_player(target, this.location);
-  if ($command_utils:object_match_failed(target, args[2]))
+  if (target in {#-1, #-2, #-3})
     return this:tell("You do not see that here.");
   endif
 endif
@@ -20,3 +20,4 @@ else
   this.location:announce_all_but({this, target}, $socials:format_social("publictarget", social["publictargetmsg"], target));
   return target:tell($socials:format_social("target", social["targetmsg"], target));
 endif
+"Last modified Wed Dec  7 17:41:38 2022 UTC by caranov (#133).";
