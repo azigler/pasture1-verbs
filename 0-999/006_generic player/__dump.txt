@@ -2914,7 +2914,7 @@ else
 endif
 .
 
-@verb #6:"say" any any any rxd #133
+@verb #6:"say -*" any any any rxd #133
 @program #6:say
 "speaking styles can be done with ~ and !, to indicate emotion and tone, respectively.";
 "say ~glumly !mutter we won't survive";
@@ -2924,9 +2924,20 @@ endif
 if (!args)
   return player:tell("What would you like to say?");
 endif
+if ((verb[1] == "-") && (length(verb) > 1))
+  target = player:my_match_object(verb[2..$]);
+  if (valid(target))
+    dobj = target;
+    target = 1;
+  else
+    return player:tell(("I don't see \"" + verb[2..$]) + "\" here.");
+  endif
+else
+  target = "";
+endif
 message = args;
 emotion = "";
-tone = "say";
+tone = {"say", "to "};
 if (((message:length() > 2) && (message[1]:length() > 1)) && (message[2]:length() > 1))
   if (message[1][1] == "~")
     emotion = message[1][2..$];
@@ -2937,13 +2948,13 @@ if (((message:length() > 2) && (message[1]:length() > 1)) && (message[2]:length(
     tone = message[2][2..$];
   endif
   for i, ind in (message[1..2])
-    if (("~" in i) || ("!" in i))
+    if (i[1] in {"~", "!"})
       message = message:setremove(i);
     endif
   endfor
 endif
-punc = ["?" -> "ask", "??" -> "demand", "???" -> "derisively ask", "!" -> "exclaim", "!!" -> "heavily emphasize", "!!!" -> "angrily roar", ".." -> "%<trail> off", "..." -> "muse"];
-if (tone == "say")
+punc = ["?" -> {"ask", ""}, "??" -> {"demand", "of "}, "???" -> {"derisively ask", ""}, "!" -> {"exclaim", "at "}, "!!" -> {"heavily emphasize", "to "}, "!!!" -> {"angrily roar", "at "}, ".." -> {"%<trail> off", "at "}, "..." -> {"muse", "to "}];
+if (tone[1] == "say")
   for examine in ({length(message[$]) - 2, length(message[$]) - 1, length(message[$])})
     try
       if (maphaskey(punc, message[$][examine..$]))
@@ -2955,9 +2966,10 @@ if (tone == "say")
     endtry
   endfor
 endif
+{tone, prep} = tone;
 ((tone[$] != "s") && (tone = ("%<" + tone) + "s>")) || (tone = ("%<" + tone) + ">");
-$you:say_action(((((("%n " + emotion) + " ") + tone) + ", \"") + $string_utils:from_list(message, " ")) + "\"");
-"Last modified Sat Dec  3 15:36:05 2022 UTC by caranov (#133).";
+$you:say_action(((((("%N " + (emotion ? emotion + " " | "")) + tone) + (target ? (" " + prep) + "%d" | "")) + ", \"") + $string_utils:from_list(message, " ")) + "\"");
+"Last modified Tue Dec  6 23:41:52 2022 UTC by Lindsey (#146).";
 .
 
 @verb #6:"yell" any any any rxd #133

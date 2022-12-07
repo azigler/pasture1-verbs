@@ -1,0 +1,26 @@
+@create $container named generic egg carton:generic egg carton,generic carton,carton
+@verb #185:"initialize" this none this
+@program #185:initialize
+pass(@args);
+debug = #2;
+while (length(this.contents) < this.slots)
+  egg = create($egg);
+  egg.name = "egg";
+  move(egg, this);
+endwhile
+debug:tell(((("Made " + tostr(length(this.contents))) + " ") + $s("egg", this.slots)) + ".");
+.
+
+@verb #185:"pre_recycle" this none this
+@program #185:pre_recycle
+for egg in (this.contents)
+  if (isa(egg, $egg))
+    player:_recycle(egg);
+  endif
+endfor
+.
+
+@prop #185."slots" 1 rc
+;;#185.("aliases") = {"generic egg carton", "generic carton", "carton"}
+;;#185.("description") = {"This is the carton."}
+;;#185.("object_size") = {0, 0}

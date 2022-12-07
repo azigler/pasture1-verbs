@@ -1,6 +1,7 @@
 # pasture1 changelog
 ## 12.06.2022:
 - source control now includes the changelog as README.md (Zig): 18:04:09
+- Added $waif_utils (which is also $anon_utils) to find WAIFs and ANONs. Feel free to try it out. Example: $anon_utils:find_anons() (Zig): 22:32:53
 ## 12.05.2022:
 - @locate command now exists for builderclass and above. (caranov): 17:47:08
 - match_exit on $room should now find an exit by its first letter, regardless of custom exit status. (caranov): 17:47:08

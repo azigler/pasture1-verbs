@@ -815,6 +815,10 @@ endif
 @prop #0."sqlite_interface" #156 rc
 @prop #0."gen_utils" #170 rc
 @prop #0."advent_2022" #171 rc
+@prop #0."waif_utils" #183 r
+@prop #0."anon_utils" #183 r
+@prop #0."carton" #185 r
+@prop #0."egg" #184 r
 ;;#0.("aliases") = {"The System Object"}
 ;;#0.("description") = "The known universe."
 ;;#0.("object_size") = {37739, 1669929999}

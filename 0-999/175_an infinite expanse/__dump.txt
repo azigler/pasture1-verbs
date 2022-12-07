@@ -66,7 +66,7 @@ this.voidcatchers = mapdelete(this.voidcatchers, player);
 "Last modified Tue Dec  6 17:41:53 2022 UTC by caranov (#133).";
 .
 
-@prop #175."voidcatchers" [#133 -> 1] rc
+@prop #175."voidcatchers" [] rc
 ;;#175.("entrances") = {#177}
 ;;#175.("blessed_object") = #133
 ;;#175.("blessed_task") = 1107377929
