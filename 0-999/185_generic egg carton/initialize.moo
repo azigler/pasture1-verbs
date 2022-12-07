@@ -7,4 +7,4 @@ while (length(this.contents) < this.slots)
   egg.name = "egg";
   move(egg, this);
 endwhile
-debug:tell("Made " + tostr(length(this.contents)) + " " + $s("egg", this.slots) + ".");
+debug:tell(" -> Created " + tostr(length(this.contents)) + " " + $s("egg", this.slots) + " and moved it inside.");

@@ -14,9 +14,7 @@ for x in (this.aoc6[4..$])
   "This is probably stupid and costly, but it works.";
   used_letters = {};
   for y in (this.aoc6[count - ind..count])
-    if (!(y in used_letters))
-      used_letters = {@used_letters, y};
-    endif
+    used_letters = setadd(used_letters, y);
   endfor
   if (length(used_letters) == ind + 1)
     return player:tell(count);

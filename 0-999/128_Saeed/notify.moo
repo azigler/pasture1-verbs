@@ -1,0 +1,8 @@
+#128:notify   this none this rxd
+
+"Copied from lisdude (#139):notify at Wed Dec  7 02:35:19 2022 UTC";
+"Your basic, run-of-the-mill anti-spoofing notify verb. Standard issue.";
+if (`this.notify ! E_PROPNF' && (this.notify == 3 || (`index($ansi_utils:delete(tostr(args[1])), player.name) ! ANY' == 0 && player != this)))
+  args[1] = tostr(args[1], "     -[yellow]", player.name, " (", player, ") ", this.notify == 2 ? "" | toliteral(callers(1)), "[normal]");
+endif
+return pass(@args);

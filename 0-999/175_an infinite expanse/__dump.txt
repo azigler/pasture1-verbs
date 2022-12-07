@@ -68,8 +68,8 @@ this.voidcatchers = mapdelete(this.voidcatchers, player);
 
 @prop #175."voidcatchers" [] rc
 ;;#175.("entrances") = {#177}
-;;#175.("blessed_object") = #133
-;;#175.("blessed_task") = 1107377929
+;;#175.("blessed_object") = #128
+;;#175.("blessed_task") = 2018263100
 ;;#175.("exits") = {#176}
 ;;#175.("aliases") = {"an infinite expanse"}
 ;;#175.("description") = "Little can be seen through the heavy fog blanketing this area, blurry and indistinct shapes hidden within the pitch black darkness that has enveloped this realm. All feeling seems to vanish from one's limbs as soon as they are encircled by the fog. Latent energies slumber within the surrounding dark. What is the potential a voidbarer could cokes?"
