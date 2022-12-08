@@ -1839,7 +1839,6 @@ this.roundtime = 0.0;
 @prop #57."toad_msg" "%n @toads %d (%[#d])" rc
 @prop #57."mail_identity" #-1 c
 @prop #57."advertised" 1 rc
-;;#57.("features") = {#90, #89}
 ;;#57.("help") = #23
 ;;#57.("password") = "really impossible password to type"
 ;;#57.("size_quota") = {50000, 0, 0, 1}

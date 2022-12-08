@@ -1552,7 +1552,6 @@ endif
 @prop #88."whisper_refused_msg" "%N refuses your whisper." rc
 @prop #88."mail_refused_msg" "%N refuses your mail." rc
 @prop #88."spurned_objects" {} r
-;;#88.("features") = {#90, #89}
 ;;#88.("help") = #92
 ;;#88.("size_quota") = {50000, 0, 0, 1}
 ;;#88.("aliases") = {"Frand's player class", "player class"}

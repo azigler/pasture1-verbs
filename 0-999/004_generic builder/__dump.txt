@@ -964,7 +964,6 @@ player:tell(objects:length(), " objects found.");
 .
 
 @prop #4."build_options" {} rc
-;;#4.("features") = {#90, #89}
 ;;#4.("help") = #84
 ;;#4.("size_quota") = {50000, 0, 0, 1}
 ;;#4.("aliases") = {"generic builder"}

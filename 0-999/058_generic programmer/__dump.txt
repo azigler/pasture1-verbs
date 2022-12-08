@@ -1949,7 +1949,6 @@ endif
 @prop #58."eval_env" "here=player.location;me=player" r #36
 @prop #58."prog_options" {} rc
 ;;#58.("prog_options") = {{"verb_perms", "rdx"}, "//_comments", "eval_time"}
-;;#58.("features") = {#90, #89}
 ;;#58.("help") = {#86, #22, #28, #18, #19, #116}
 ;;#58.("size_quota") = {50000, 0, 0, 1}
 ;;#58.("aliases") = {"generic", "programmer"}
