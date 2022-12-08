@@ -3114,6 +3114,7 @@ return 1;
 .
 
 @prop #6."features" {} r #36
+;;#6.("features") = {#90, #89, #130, #134, #154}
 @prop #6."previous_connection" 0 ""
 @prop #6."email_address" "" ""
 @prop #6."last_disconnect_time" 0 r

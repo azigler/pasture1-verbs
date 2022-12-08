@@ -340,11 +340,11 @@ this.prune_stop = "zzz";
 @prop #25."prune_task" 298000796 rc
 @prop #25."alphabet" "abcdefghijklmnopqrstuvwxy0123456789_z" rc
 @prop #25." r" {} ""
-;;#25.(" r") = {"", "", {"rr.com", "res.rr.com"}, {{"res"}, {"socal"}}}
+;;#25.(" r") = {"", "e", {"rr.com"}, {{"res"}}}
 @prop #25." c" {} ""
 ;;#25.(" c") = {"", "o", {"cpe-172-116-51-187.socal.res.rr.com"}, {{#2}}}
 @prop #25." s" {} ""
-;;#25.(" s") = {"", "o", {"sbcglobal.net"}, {{"austtx"}}}
+;;#25.(" s") = {"", "o", {"spectrum.com", "sbcglobal.net"}, {{"res"}, {"austtx"}}}
 @prop #25." 1" {} ""
 ;;#25.(" 1") = {"", "", {"104-52-62-74.lightspeed.austtx.sbcglobal.net", "149-76-213-76.fidnet.com", "162.250.189.123"}, {{#146}, {#139}, {#128}}}
 @prop #25." 3" {} ""
@@ -358,9 +358,11 @@ this.prune_stop = "zzz";
 @prop #25." 37.238.28.2" {} ""
 ;;#25.(" 37.238.28.2") = {"", "", {"37.238.28.22", "37.238.28.28", "37.238.28.24"}, {{#181, #133}, {#133}, {#133}}}
 @prop #25." co" {} ""
-;;#25.(" co") = {"", "", {"co.uk", "coldcode.co.uk", "com"}, {{"coldcode"}, {#147}, {"rr", "solucaonetwork", "fidnet"}}}
+;;#25.(" co") = {"", "", {"co.uk", "coldcode.co.uk", "com"}, {{"coldcode"}, {#147}, {"rr", "solucaonetwork", "fidnet", "spectrum"}}}
+@prop #25." re" {} ""
+;;#25.(" re") = {"s.", "", {"res.spectrum.com", "res.rr.com"}, {{"071-087-215-112"}, {"socal"}}}
 ;;#25.("node_perms") = ""
-;;#25.(" ") = {"", "rcs13", {"uk", "net", "austtx.sbcglobal.net", "lightspeed.austtx.sbcglobal.net", "fidnet.com", "dinamico-131-255-054-023.solucaonetwork.com"}, {{"co"}, {"sbcglobal"}, {"lightspeed"}, {"104-52-62-74"}, {"149-76-213-76"}, {#129}}}
+;;#25.(" ") = {"", "rcs13", {"071-087-215-112.res.spectrum.com", "uk", "net", "austtx.sbcglobal.net", "lightspeed.austtx.sbcglobal.net", "fidnet.com", "dinamico-131-255-054-023.solucaonetwork.com"}, {{#239}, {"co"}, {"sbcglobal"}, {"lightspeed"}, {"104-52-62-74"}, {"149-76-213-76"}, {#129}}}
 ;;#25.("aliases") = {"sitedb", "site", "db"}
 ;;#25.("description") = {"This object holds a db of places from which players have connected (see `help $site_db').", "The site blacklist and the graylist live as well (see `help blacklist')."}
 ;;#25.("object_size") = {18428, 1641541193}
