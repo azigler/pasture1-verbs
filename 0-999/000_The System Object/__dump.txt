@@ -201,6 +201,7 @@ except id (ANY)
   user:tell("(End of traceback)");
 endtry
 user:tell(("If you are interested in recent developments, You may check the changelog with the changelog command. Help me:changelog has further information! Welcome to " + $network.moo_name) + ".");
+"Last modified Thu Dec  8 13:38:39 2022 UTC by caranov (#133).";
 .
 
 @verb #0:"user_disconnected user_client_disconnected" this none this
@@ -224,6 +225,7 @@ if (user.location != where)
   `where.location:disfunc(user) ! ANY => 0';
 endif
 `user.location:disfunc(user) ! ANY => 0';
+"Last modified Thu Dec  8 13:40:28 2022 UTC by caranov (#133).";
 .
 
 @verb #0:"bf_chparent chparent" this none this

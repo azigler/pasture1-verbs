@@ -19,3 +19,4 @@ if (user.location != where)
   `where.location:disfunc(user) ! ANY => 0';
 endif
 `user.location:disfunc(user) ! ANY => 0';
+"Last modified Thu Dec  8 13:40:28 2022 UTC by caranov (#133).";

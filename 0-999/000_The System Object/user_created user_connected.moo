@@ -18,3 +18,4 @@ except id (ANY)
   user:tell("(End of traceback)");
 endtry
 user:tell("If you are interested in recent developments, You may check the changelog with the changelog command. Help me:changelog has further information! Welcome to " + $network.moo_name + ".");
+"Last modified Thu Dec  8 13:38:39 2022 UTC by caranov (#133).";
