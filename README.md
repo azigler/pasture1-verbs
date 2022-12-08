@@ -1,6 +1,7 @@
 # pasture1 changelog
 ## 12.08.2022:
 - Replay has been added. Categories such as general, chat and say can be accessed by entering their name or partial name into the command. This also applies to message ranges, for instance replay 8 will show the last 8 messages of general, replay say 8 will do the same for the say category. All messages over an hour old will be periodically wiped to prevent replay clutter. (caranov): 07:51:09
+- There is now a finger command with stock fields, as well as customizable ones. It can be accessed by using finger <player>. To add, edit, or remove fields, finger customize can be used. (caranov): 10:17:04
 ## 12.07.2022:
 - [$prog:@forked] Add the total number of returned tasks at the bottom. (Saeed): 17:39:54
 - [$wiz:@code-review] Report how long the verb took to finish. (Saeed): 17:45:42

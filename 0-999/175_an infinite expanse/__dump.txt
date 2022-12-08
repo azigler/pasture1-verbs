@@ -14,11 +14,11 @@ if (this:has_pole(player) == 0)
     ref = ref + 1;
   endwhile
   player:tell("Searing pain explodes across your spine as you crash into the floor with an audible crack.");
-  player.location:announce(player.name + " suddenly crashes from above, landing with a clearly audible crack.");
+  player.location:announce(player.name + " suddenly crashes in from above, landing with a clearly audible crack.");
 else
   this:_cast();
 endif
-"Last modified Wed Dec  7 17:43:13 2022 UTC by caranov (#133).";
+"Last modified Thu Dec  8 08:40:05 2022 UTC by caranov (#133).";
 .
 
 @verb #175:"enterfunc" this none this
@@ -43,7 +43,10 @@ endif
 this.voidcatchers[player] = 1;
 player:tell(("Agonizing pain explodes across your body as you raise " + pole:title()) + " above your head and cast the tip into the depths. Racing lines of shadowy thread suddenly explode outward around your form, attracting the lost souls dwelling within the void.");
 pole:damage();
-"Last modified Wed Dec  7 07:16:45 2022 UTC by caranov (#133).";
+fork (random(5, 15))
+  this:attract();
+endfork
+"Last modified Thu Dec  8 08:40:56 2022 UTC by caranov (#133).";
 .
 
 @verb #175:"has_pole" this none this
@@ -67,10 +70,11 @@ this.voidcatchers = mapdelete(this.voidcatchers, player);
 "Last modified Tue Dec  6 17:41:53 2022 UTC by caranov (#133).";
 .
 
+@verb #175:"attract" this none this
 @prop #175."voidcatchers" [] rc
 ;;#175.("entrances") = {#177}
-;;#175.("blessed_object") = #239
-;;#175.("blessed_task") = 1258136915
+;;#175.("blessed_object") = #133
+;;#175.("blessed_task") = 934441060
 ;;#175.("exits") = {#176}
 ;;#175.("aliases") = {"an infinite expanse"}
 ;;#175.("description") = "Little can be seen through the heavy fog blanketing this area, blurry and indistinct shapes hidden within the pitch black darkness that has enveloped this realm. All feeling seems to vanish from one's limbs as soon as they are encircled by the fog. Latent energies slumber within the surrounding dark. What is the potential a voidbarer could cokes?"

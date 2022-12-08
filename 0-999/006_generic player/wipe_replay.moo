@@ -1,5 +1,6 @@
 #6:wipe_replay   this none this rxd
 
+this.last_replay_wipe = time();
 for category in (mapkeys(this.replay_history))
   for message in (this.replay_history[category])
     if (abs(toint(message[1]) - time()) >= 3600)
@@ -7,4 +8,4 @@ for category in (mapkeys(this.replay_history))
     endif
   endfor
 endfor
-"Last modified Thu Dec  8 07:35:55 2022 UTC by caranov (#133).";
+"Last modified Thu Dec  8 09:08:58 2022 UTC by caranov (#133).";

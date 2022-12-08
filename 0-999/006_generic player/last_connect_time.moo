@@ -3,6 +3,6 @@
 if (this in connected_players())
   return 0;
 else
-  return this.last_connected_time;
+  return this.last_connect_time;
 endif
-"Last modified Thu Dec  8 07:32:14 2022 UTC by caranov (#133).";
+"Last modified Thu Dec  8 10:00:08 2022 UTC by caranov (#133).";

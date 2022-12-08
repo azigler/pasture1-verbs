@@ -3185,6 +3185,7 @@ this:add_replay_entry({"general", "say"}, $string_utils:pronoun_sub(msg));
 
 @verb #6:"wipe_replay" this none this rxd #133
 @program #6:wipe_replay
+this.last_replay_wipe = time();
 for category in (mapkeys(this.replay_history))
   for message in (this.replay_history[category])
     if (abs(toint(message[1]) - time()) >= 3600)
@@ -3192,7 +3193,7 @@ for category in (mapkeys(this.replay_history))
     endif
   endfor
 endfor
-"Last modified Thu Dec  8 07:35:55 2022 UTC by caranov (#133).";
+"Last modified Thu Dec  8 09:08:58 2022 UTC by caranov (#133).";
 .
 
 @verb #6:"last_connect_time" this none this rxd #133
@@ -3200,9 +3201,53 @@ endfor
 if (this in connected_players())
   return 0;
 else
-  return this.last_connected_time;
+  return this.last_connect_time;
 endif
-"Last modified Thu Dec  8 07:32:14 2022 UTC by caranov (#133).";
+"Last modified Thu Dec  8 10:00:08 2022 UTC by caranov (#133).";
+.
+
+@verb #6:"f*inger" any any any rxd #133
+@program #6:finger
+{?arg = "me"} = args;
+if (arg in {"customize"})
+  menu = {};
+  for i in (player.custom_profile_info)
+    menu = {@menu, i[1]};
+  endfor
+  menu = {@menu, "add a field", "remove a field"};
+  player:tell("You have ", this.custom_profile_info:length(), " custom profile fields.");
+  choice = $menu_utils:menu(menu);
+  if (choice == (length(menu) - 1))
+    fieldtitle = $command_utils:read("the field's title,");
+    field = $command_utils:read("the text this field contains,");
+    this.custom_profile_info = setadd(this.custom_profile_info, {fieldtitle, field});
+    return player:tell("Added successfully.");
+  elseif (choice == length(menu))
+    if (length(this.custom_profile_info) == 0)
+      return player:tell("You have no custom profile fields to remove.");
+    else
+      menu = this.custom_profile_info;
+      choice = $menu_utils:menu(menu);
+      this.custom_profile_info = listdelete(this.custom_profile_info, choice);
+      return player:tell("Deleted.");
+    endif
+  else
+    field = $command_utils:read("the new field text,");
+    this.custom_profile_info[choice][2] = field;
+    return player:tell(("Successfully set to " + field) + ".");
+  endif
+endif
+who = $string_utils:match_player(arg);
+if (who in {#-1, #-2, #-3})
+  return player:tell("This is not a valid player.");
+endif
+info = {{"name", who.name}, {"gender", who.gender}, `{"last performed command", $time_utils:english_time(idle_seconds(who)) + " ago"} ! ANY => {"last connected", $time_utils:english_time(abs(who:last_connect_time() - time())) + " ago"}', {"Ingame location", $string_utils:nn(who.location)}, {"owned objects", tostr(who.owned_objects:length())}};
+(who in connected_players()) && (info = {@info, {"connected for", $time_utils:english_time(time() - who.last_connect_time)}});
+(who.custom_profile_info != {}) && (info = {@info, @who.custom_profile_info});
+for i in (info)
+  player:tell(($string_utils:capitalize(i[1]) + ": ") + i[2]);
+endfor
+"Last modified Thu Dec  8 11:56:17 2022 UTC by caranov (#133).";
 .
 
 @prop #6."features" {} r #36
@@ -3257,6 +3302,8 @@ endif
 @prop #6."allowed_roundtime_commands" {} rc
 ;;#6.("allowed_roundtime_commands") = {"chat", "say", "emote", "look", "quit", "afk", "@unfreeze"}
 @prop #6."replay_history" ["chat" -> {}, "general" -> {}, "say" -> {}] c
+@prop #6."last_replay_wipe" 0 rc
+@prop #6."custom_profile_info" {} rc
 ;;#6.("aliases") = {"generic player"}
 ;;#6.("description") = "You see a player who should type '@describe me as ...'."
 ;;#6.("object_size") = {162725, 1670400000}

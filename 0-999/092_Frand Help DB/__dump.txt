@@ -57,6 +57,10 @@
 ;;#92.("@rmsubmitted") = {"*forward*", "@submitted"}
 @prop #92."changelog" {} rc
 ;;#92.("changelog") = {"syntax:", "changelog, reads last entry.", "changelog <number>, reads last specified entries.", "changelog add, gives a multiline entryfield. Each line will be considered as a new item.", "changelog edit / remove, self explanatory, will display menus."}
+@prop #92."replay" {} rc
+;;#92.("replay") = {"syntax: replay, checks last 15 messages in the general category. If a number is the first element, checks the last <arg> messages.", "replay <category name or keyword>, checks said category. For instance, replay say would check the last 15 entries of the says category. Replay say 5 would show 5.", "A periodic wipe occurs on messages which are dated equivalent to or greater than 1 hour old."}
+@prop #92."finger" {} rc
+;;#92.("finger") = {"syntax: finger <player>", "finger customize", "If a player name is specified, this command will check the profile of said player. Otherwise, if the argument is customize, this will lead into a self explanatory prompt that will allow you to add, edit and remove any custom profile fields you have set."}
 ;;#92.("index_cache") = {"frand-index"}
 ;;#92.("aliases") = {"Frand Help DB"}
 ;;#92.("description") = "A help database of the standard form in need of a description. See `help $generic_help'..."

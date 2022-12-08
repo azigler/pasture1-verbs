@@ -13,8 +13,8 @@ if (this:has_pole(player) == 0)
     ref = ref + 1;
   endwhile
   player:tell("Searing pain explodes across your spine as you crash into the floor with an audible crack.");
-  player.location:announce(player.name + " suddenly crashes from above, landing with a clearly audible crack.");
+  player.location:announce(player.name + " suddenly crashes in from above, landing with a clearly audible crack.");
 else
   this:_cast();
 endif
-"Last modified Wed Dec  7 17:43:13 2022 UTC by caranov (#133).";
+"Last modified Thu Dec  8 08:40:05 2022 UTC by caranov (#133).";

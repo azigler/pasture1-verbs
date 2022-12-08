@@ -1,5 +1,5 @@
 @create $container named generic egg carton:generic egg carton,generic carton,carton
-@verb #185:"initialize" this none this rxd #133
+@verb #185:"initialize" this none this
 @program #185:initialize
 pass(@args);
 debug = #2;
@@ -12,7 +12,7 @@ debug:tell((((" -> Created " + tostr(length(this.contents))) + " ") + $s("egg", 
 "Last modified Wed Dec  7 13:35:15 2022 UTC by caranov (#133).";
 .
 
-@verb #185:"pre_recycle" this none this rxd #133
+@verb #185:"pre_recycle" this none this
 @program #185:pre_recycle
 for egg in (this.contents)
   if (isa(egg, $egg))
