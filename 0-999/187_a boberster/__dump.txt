@@ -1,4 +1,4 @@
 @create $carton named a boberster:a boberster
 ;;#187.("aliases") = {"a boberster"}
 ;;#187.("description") = {"This biscuit-coloured biodegradable vessel is a masterpiece of streamlined efficiency, fit with snug cradles that whisk, miraculously intact, from farm to grocer to your refrigerator at home, as unblemished as the moment they were laid, fragile lily-white eggs. Sturdy enough to carry in one hand, the two sculpted knobs of protruding fibre on its base fit ingeniously into the pre-punched holes of its lid to secure a seal, the carton is pledged to fulfill its modest function and then -- duty performed, eggs eaten -- is prepared to be recycled, composted or repurposed for crafts, or used to soundproof a pervious wall. Such unassuming perfection in design is one of the quiet reliable pleasures of the whole messy human experience."}
-;;#187.("object_size") = {0, 0}
+;;#187.("object_size") = {1336, 1670486400}
