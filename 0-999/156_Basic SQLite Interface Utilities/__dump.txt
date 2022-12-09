@@ -54,4 +54,4 @@ endif
 @prop #156."after_connect_commands" [] rc
 ;;#156.("aliases") = {"Basic SQLite Interface Utilities"}
 ;;#156.("description") = "This is a placeholder parent for all the $..._utils packages, to more easily find them and manipulate them. At present this object defines no useful verbs or properties. (Filfre.)"
-;;#156.("object_size") = {2698, 1670054400}
+;;#156.("object_size") = {3838, 1670572800}

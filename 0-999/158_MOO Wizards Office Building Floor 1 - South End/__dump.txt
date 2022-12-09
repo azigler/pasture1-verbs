@@ -3,4 +3,4 @@
 ;;#158.("blessed_task") = 934738441
 ;;#158.("exits") = {#160, #162}
 ;;#158.("aliases") = {"MOO Wizards Office Building Floor 1 - South End"}
-;;#158.("object_size") = {992, 1670054400}
+;;#158.("object_size") = {992, 1670572800}
