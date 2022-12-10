@@ -3,4 +3,4 @@
 ;;#168.("blessed_task") = 1404401915
 ;;#168.("exits") = {#173}
 ;;#168.("aliases") = {"emerging on the other side of the testing cave"}
-;;#168.("object_size") = {926, 1670140800}
+;;#168.("object_size") = {958, 1670659200}

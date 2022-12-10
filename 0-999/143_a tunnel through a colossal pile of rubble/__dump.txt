@@ -3,4 +3,4 @@
 ;;#143.("blessed_task") = 654106832
 ;;#143.("exits") = {#169, #174}
 ;;#143.("aliases") = {"a tunnel through a colossal pile of rubble"}
-;;#143.("object_size") = {950, 1670140800}
+;;#143.("object_size") = {982, 1670659200}
