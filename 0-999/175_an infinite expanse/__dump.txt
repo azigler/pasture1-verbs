@@ -78,4 +78,4 @@ this.voidcatchers = mapdelete(this.voidcatchers, player);
 ;;#175.("exits") = {#176}
 ;;#175.("aliases") = {"an infinite expanse"}
 ;;#175.("description") = "Little can be seen through the heavy fog blanketing this area, blurry and indistinct shapes hidden within the pitch black darkness that has enveloped this realm. All feeling seems to vanish from one's limbs as soon as they are encircled by the fog. Latent energies slumber within the surrounding dark. What is the potential a voidbarer could cokes?"
-;;#175.("object_size") = {4439, 1670313601}
+;;#175.("object_size") = {6780, 1670832000}
