@@ -992,7 +992,7 @@ this.name_lookup_players = setremove(this.name_lookup_players, connection);
 @prop #10."lag_cutoff" 5 rc
 @prop #10."lag_exemptions" {} rc
 @prop #10."newted" {} ""
-@prop #10."current_numcommands" [#-176 -> 1] rc
+@prop #10."current_numcommands" [#-183 -> 1] rc
 @prop #10."max_numcommands" 20 rc
 @prop #10."temporary_newts" {} c
 @prop #10."downtimes" {} rc
@@ -1013,7 +1013,7 @@ this.name_lookup_players = setremove(this.name_lookup_players, connection);
 @prop #10."no_connect_message" 0 rc
 @prop #10."argon2" ["iterations" -> 3, "memory" -> 4096, "threads" -> 1] rc
 @prop #10."name_lookup_players" {} rc
-;;#10.("name_lookup_players") = {#-24, #-25, #-26, #-27, #-28, #-147, #-148, #-149, #-150, #-151, #-154, #-155, #-156, #-157, #-158, #-159, #-160, #-161, #-162, #-163, #-164, #-170, #-173, #-174, #-175, #-176}
+;;#10.("name_lookup_players") = {#-24, #-25, #-26, #-27, #-28, #-147, #-148, #-149, #-150, #-151, #-154, #-155, #-156, #-157, #-158, #-159, #-160, #-161, #-162, #-163, #-164, #-170, #-173, #-174, #-175, #-176, #-180, #-181, #-182, #-183}
 ;;#10.("aliases") = {"Login Commands"}
 ;;#10.("description") = "This provides everything needed by #0:do_login_command.  See `help $login' on $core_help for details."
 ;;#10.("object_size") = {60221, 1670400000}
