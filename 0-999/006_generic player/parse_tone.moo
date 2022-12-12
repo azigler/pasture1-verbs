@@ -4,9 +4,9 @@
 if (tone[$] == "s" && tone[$ - 1..$] != "es")
   tone = tone[1..$] + "es";
 endif
-if (tone[$] == "y")
+if (tone[$] == "y" && tone != "say")
   tone = tone[1..$ - 1] + "ies";
 endif
 tone[$] != "s" && (tone = "%<" + tone + "s>") || (tone = "%<" + tone + ">");
 return tone;
-"Last modified Thu Dec  8 06:48:22 2022 UTC by caranov (#133).";
+"Last modified Sun Dec 11 22:05:23 2022 UTC by Lindsey (#146).";
