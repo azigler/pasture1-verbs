@@ -4,4 +4,4 @@
 ;;#131.("look_contents_msg") = "The MOO %n is tacked up nearby, now with a handy pen dangling from a cord so things can be crossed off."
 ;;#131.("aliases") = {"wishlist"}
 ;;#131.("description") = "There appears to be some writing on the note ..."
-;;#131.("object_size") = {3518, 1670400000}
+;;#131.("object_size") = {3732, 1670918400}

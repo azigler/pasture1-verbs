@@ -94,4 +94,4 @@ this.client_stats = {clients, users};
 ;;#121.("messages_in") = {{"screensize", {"cols", "rows"}}, {"info", {"name", "text-version", "internal-version"}}}
 ;;#121.("messages_out") = {{"disconnect", {"reason"}}}
 ;;#121.("aliases") = {"dns-com-vmoo-client"}
-;;#121.("object_size") = {6992, 1670400000}
+;;#121.("object_size") = {6992, 1670918400}

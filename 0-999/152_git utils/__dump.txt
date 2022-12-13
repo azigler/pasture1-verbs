@@ -154,4 +154,4 @@ return player:notify("Changelog successfully saved to README.md");
 
 ;;#152.("aliases") = {"git utils"}
 ;;#152.("description") = "This is a placeholder parent for all the $..._utils packages, to more easily find them and manipulate them. At present this object defines no useful verbs or properties. (Filfre.)"
-;;#152.("object_size") = {7293, 1670400000}
+;;#152.("object_size") = {7293, 1670918400}

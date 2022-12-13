@@ -992,7 +992,7 @@ this.name_lookup_players = setremove(this.name_lookup_players, connection);
 @prop #10."lag_cutoff" 5 rc
 @prop #10."lag_exemptions" {} rc
 @prop #10."newted" {} ""
-@prop #10."current_numcommands" [#-215 -> 1] rc
+@prop #10."current_numcommands" [#-229 -> 1] rc
 @prop #10."max_numcommands" 20 rc
 @prop #10."temporary_newts" {} c
 @prop #10."downtimes" {} rc
@@ -1013,7 +1013,7 @@ this.name_lookup_players = setremove(this.name_lookup_players, connection);
 @prop #10."no_connect_message" 0 rc
 @prop #10."argon2" ["iterations" -> 3, "memory" -> 4096, "threads" -> 1] rc
 @prop #10."name_lookup_players" {} rc
-;;#10.("name_lookup_players") = {#-24, #-25, #-26, #-27, #-28, #-147, #-148, #-149, #-150, #-151, #-154, #-155, #-156, #-157, #-158, #-159, #-160, #-161, #-162, #-163, #-164, #-170, #-173, #-174, #-175, #-176, #-180, #-181, #-182, #-183, #-187, #-192, #-193, #-194, #-195, #-196, #-198, #-199, #-200, #-201, #-202, #-203, #-204, #-205, #-206, #-207, #-208, #-209, #-211, #-212, #-213, #-214, #-215}
+;;#10.("name_lookup_players") = {#-24, #-25, #-26, #-27, #-28, #-147, #-148, #-149, #-150, #-151, #-154, #-155, #-156, #-157, #-158, #-159, #-160, #-161, #-162, #-163, #-164, #-170, #-173, #-174, #-175, #-176, #-180, #-181, #-182, #-183, #-187, #-192, #-193, #-194, #-195, #-196, #-198, #-199, #-200, #-201, #-202, #-203, #-204, #-205, #-206, #-207, #-208, #-209, #-211, #-212, #-213, #-214, #-215, #-218, #-219, #-220, #-221, #-222, #-223, #-224, #-225, #-226, #-227, #-228, #-229}
 ;;#10.("aliases") = {"Login Commands"}
 ;;#10.("description") = "This provides everything needed by #0:do_login_command.  See `help $login' on $core_help for details."
-;;#10.("object_size") = {60221, 1670400000}
+;;#10.("object_size") = {61181, 1670918400}

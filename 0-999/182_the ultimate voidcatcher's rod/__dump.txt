@@ -2,4 +2,4 @@
 ;;#182.("endurance") = 927.112341463618
 ;;#182.("soulshards") = 1326.39249131381
 ;;#182.("aliases") = {"the ultimate voidcatcher's rod"}
-;;#182.("object_size") = {910, 1670400000}
+;;#182.("object_size") = {910, 1670918400}

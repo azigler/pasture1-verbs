@@ -1199,4 +1199,4 @@ return ret;
 ;;#99.("help_msg") = {"A utility package for controlling ANSI sequences from within the MOO.  See 'help ansi-intro' for more info."}
 ;;#99.("aliases") = {"ANSI Utilities", "au"}
 ;;#99.("description") = "{A utility for controlling ANSI sequences from within the MOO.  See 'help ansi-intro' for more info.}"
-;;#99.("object_size") = {77812, 1670400000}
+;;#99.("object_size") = {77848, 1670918400}

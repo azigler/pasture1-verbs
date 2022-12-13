@@ -15,4 +15,4 @@ endif
 @prop #138."gesture_msg" "%N %<makes> a quick gesture to %t." rc
 ;;#138.("aliases") = {"generic following npc"}
 ;;#138.("description") = "You see a player who should type '@describe me as ...'."
-;;#138.("object_size") = {3297, 1670400000}
+;;#138.("object_size") = {3393, 1670918400}

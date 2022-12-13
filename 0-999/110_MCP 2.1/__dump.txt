@@ -175,4 +175,4 @@ return {"parser", "session", "package", "negotiate", "registry", "cord", "simple
 @prop #110."status" #123 rc
 @prop #110."dispatch" #103 rc
 ;;#110.("aliases") = {"MCP 2.1", "mcp"}
-;;#110.("object_size") = {11136, 1670400000}
+;;#110.("object_size") = {11136, 1670918400}

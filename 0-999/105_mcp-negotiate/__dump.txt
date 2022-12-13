@@ -33,4 +33,4 @@ endif
 ;;#105.("messages_in") = {{"can", {"package", "min-version", "max-version"}}, {"end", {}}}
 ;;#105.("messages_out") = {{"can", {"package", "min-version", "max-version"}}, {"end", {}}}
 ;;#105.("aliases") = {"mcp-negotiate", "negotiate"}
-;;#105.("object_size") = {3348, 1670400000}
+;;#105.("object_size") = {3348, 1670918400}

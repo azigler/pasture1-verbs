@@ -71,4 +71,4 @@ endif
 @prop #103."messages_in" {} r
 @prop #103."messages_out" {} r
 ;;#103.("aliases") = {"generic message dispatch object", "dispatch"}
-;;#103.("object_size") = {5312, 1670400000}
+;;#103.("object_size") = {5312, 1670918400}

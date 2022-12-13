@@ -1844,4 +1844,4 @@ this.roundtime = 0.0;
 ;;#57.("size_quota") = {50000, 0, 0, 1}
 ;;#57.("aliases") = {"player"}
 ;;#57.("description") = "You see a wizard who chooses not to reveal its true appearance."
-;;#57.("object_size") = {93330, 1670400000}
+;;#57.("object_size") = {86364, 1670918400}

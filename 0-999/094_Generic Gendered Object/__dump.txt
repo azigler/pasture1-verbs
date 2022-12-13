@@ -38,4 +38,4 @@ endif
 @prop #94."ps" "it" rc
 @prop #94."verb_subs" {} rc
 ;;#94.("aliases") = {"Generic Gendered Object"}
-;;#94.("object_size") = {3044, 1670400000}
+;;#94.("object_size") = {3044, 1670918400}

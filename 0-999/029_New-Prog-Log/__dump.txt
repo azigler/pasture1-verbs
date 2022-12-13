@@ -168,4 +168,4 @@ return this.name + " doesn't understand %%from:";
 ;;#29.("messages") = {{2, {1669930305, #2, #128, "Saeed"}}, {3, {1669955945, #2, #129, "Skye"}}, {4, {1669962694, #2, #133, "caranov"}}, {5, {1669966883, #2, #139, "lisdude"}}, {6, {1670002611, #2, #146, "Lindsey"}}, {7, {1670002765, #2, #147, "rain"}}, {8, {1670320220, #133, #181, "grub"}}, {9, {1670449724, #2, #239, "Krystal"}}, {10, {1670522181, #2, #240, "mukhomor"}}, {11, {1670522579, #2, #241, "anodyne"}}}
 ;;#29.("aliases") = {"New-Prog-Log", "New_Prog_Log", "NPL"}
 ;;#29.("description") = "Record of who's been made a @programmer."
-;;#29.("object_size") = {10400, 1670400000}
+;;#29.("object_size") = {10857, 1670918400}

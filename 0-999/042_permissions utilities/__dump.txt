@@ -59,4 +59,4 @@ return who.wizard || (who == call_function(bi, what, name)[1]);
 ;;#42.("help_msg") = {"Miscellaneous routines for permissions checking", "", "For a complete description of a given verb, do `help $perm_utils:verbname'", "", ":controls(who,what) -- can who write on object what", ":controls_property(who,what,propname) -- can who write on what.propname", "These routines check write flags and also the wizardliness of `who'.", "", "(these last two probably belong on $code_utils)", "", ":apply(permstring,mods)", "  -- used by @chmod to apply changes (e.g., +x) ", "     to a given permissions string", "", ":caller()", "  -- returns the first caller in the callers() stack distinct from `this'"}
 ;;#42.("aliases") = {"Generic Utilities Package"}
 ;;#42.("description") = {"This is the permissions utilities utility package.  See `help $perm_utils' for more details."}
-;;#42.("object_size") = {4950, 1670400000}
+;;#42.("object_size") = {4950, 1670918400}

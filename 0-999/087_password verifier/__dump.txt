@@ -187,4 +187,4 @@ endif
 @prop #87."check_obscure_stuff" 0 r
 ;;#87.("aliases") = {"password verifier", "password", "verifier", "pwd"}
 ;;#87.("description") = "The password verifier verifies passwords."
-;;#87.("object_size") = {15220, 1670400000}
+;;#87.("object_size") = {15220, 1670918400}

@@ -381,4 +381,4 @@ return {@args[1].aliases, @args[1]:title():explode()};
 ;;#21.("help_msg") = {"Verbs useful for building.  For a complete description of a given verb, do `help $building_utils:verbname'.", "", "make_exit(spec,source,dest[,don't-really-create]) => a new exit", "          spec is an exit-spec as described in `help @dig'", "", "set_names(object, spec) - sets name and aliases for an object", "parse_names(spec) => list of {name, aliases}", "          in both of these, spec is of the form", "            <name>[[,:]<alias>,<alias>,...]", "          (as described in `help @rename')", "", "recreate(object, newparent) - effectively recycle and recreate object", "          as a child of newparent"}
 ;;#21.("aliases") = {"building", "utils"}
 ;;#21.("description") = {"This is the building utilities utility package.  See `help $building_utils' for more details."}
-;;#21.("object_size") = {19824, 1670400000}
+;;#21.("object_size") = {19824, 1670918400}

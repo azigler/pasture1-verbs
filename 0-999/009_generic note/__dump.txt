@@ -151,4 +151,4 @@ $network:sendmail(email, this:titlec(), "", @text);
 @prop #9."text" {} c
 ;;#9.("aliases") = {"generic note"}
 ;;#9.("description") = "There appears to be some writing on the note ..."
-;;#9.("object_size") = {9902, 1670400000}
+;;#9.("object_size") = {9902, 1670918400}

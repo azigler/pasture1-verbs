@@ -124,4 +124,4 @@ endif
 
 ;;#11.("aliases") = {"Player Last_huh Verbs"}
 ;;#11.("description") = "A repository of last-resort player verbs to be called by $player:last_huh"
-;;#11.("object_size") = {6454, 1670400000}
+;;#11.("object_size") = {6454, 1670918400}
