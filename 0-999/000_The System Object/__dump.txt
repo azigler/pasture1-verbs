@@ -823,4 +823,4 @@ endif
 @prop #0."egg" #184 r
 ;;#0.("aliases") = {"The System Object"}
 ;;#0.("description") = "The known universe."
-;;#0.("object_size") = {43512, 1670400000}
+;;#0.("object_size") = {43674, 1670918400}

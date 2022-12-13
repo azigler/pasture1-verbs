@@ -110,4 +110,4 @@ return $string_utils:pronoun_sub(this.(verb), this);
 @prop #5."take_failed_msg" "You can't pick that up." rc
 @prop #5."look_contents_msg" "" rc
 ;;#5.("aliases") = {"generic thing"}
-;;#5.("object_size") = {7731, 1670400000}
+;;#5.("object_size") = {7731, 1670918400}

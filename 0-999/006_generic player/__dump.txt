@@ -3273,4 +3273,4 @@ endfor
 @prop #6."custom_profile_info" {} rc
 ;;#6.("aliases") = {"generic player"}
 ;;#6.("description") = "You see a player who should type '@describe me as ...'."
-;;#6.("object_size") = {162725, 1670400000}
+;;#6.("object_size") = {171658, 1670918400}
