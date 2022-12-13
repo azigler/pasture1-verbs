@@ -873,6 +873,12 @@ return `(what == "") ? $failed_match | (["north" -> "south", "east" -> "west", "
 "Last modified Mon Dec  5 18:10:20 2022 UTC by caranov (#133).";
 .
 
+@verb #3:"players" this none this rxd #133
+@program #3:players
+return occupants(this.contents, $player, 1);
+"Last modified Tue Dec 13 16:50:45 2022 UTC by caranov (#133).";
+.
+
 @prop #3."who_location_msg" "%T" rc
 @prop #3."free_home" 0 rc
 @prop #3."victim_ejection_msg" "You have been expelled from %i by %n." rc

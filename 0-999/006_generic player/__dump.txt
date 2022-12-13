@@ -3145,9 +3145,9 @@ if (tone[1] == "say")
   endfor
 endif
 {tone, prep} = tone;
-$you:say_action(msg = ((((("%N " + (emotion ? emotion + " " | "")) + this:parse_tone(tone)) + (target ? (" " + prep) + "%d" | "")) + ", \"") + $string_utils:from_list(message, " ")) + "\"");
+$you:say_action(msg = ((((("%N " + (emotion ? emotion + " " | "")) + this:parse_tone(tone)) + (target ? (" " + prep) + " %d" | "")) + ", \"") + $string_utils:from_list(message, " ")) + "\"");
 this:add_replay_entry({"general", "say"}, $string_utils:pronoun_sub(msg));
-"Last modified Thu Dec  8 07:10:00 2022 UTC by caranov (#133).";
+"Last modified Tue Dec 13 17:15:25 2022 UTC by caranov (#133).";
 .
 
 @verb #6:"wipe_replay" this none this rxd #133
