@@ -27,7 +27,7 @@ endif
 .
 
 @prop #130."afk_list" {} rc
-;;#130.("afk_list") = {#147, #139, #146, #133}
+;;#130.("afk_list") = {#147, #139, #146}
 ;;#130.("feature_verbs") = {}
 ;;#130.("aliases") = {"Global Chat Feature"}
 ;;#130.("description") = "This is the Generic Feature Object.  It is not meant to be used as a feature object itself, but is handy for making new feature objects."
