@@ -3,4 +3,4 @@
 ;;#148.("key") = #2
 ;;#148.("aliases") = {"towering statue of a Shee", "statue", "Shee"}
 ;;#148.("description") = "https://static.wikia.nocookie.net/creatures/images/9/9a/Sheestatue.png/revision/latest?cb=20050202214828"
-;;#148.("object_size") = {1024, 1670486400}
+;;#148.("object_size") = {1024, 1671004800}
